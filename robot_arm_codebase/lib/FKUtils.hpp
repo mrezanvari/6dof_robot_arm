@@ -12,7 +12,7 @@ const double d2 = 19.898;
 const double d3 = -0.39;
 const double d4 = 231.03; // 177.485 + 54.70;
 const double d5 = 2.785;
-const double d6 = 95.069 + 58.60; // end effector ball centre 58.60
+const double d6 = 140.54; // 95.069 + 58.60; // end effector ball centre 58.60
 
 const double FK_a1 = 0;       // 23.216 centre offset
 const double FK_a2 = 0;       // length of lower arm
