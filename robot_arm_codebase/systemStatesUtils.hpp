@@ -10,6 +10,7 @@ enum SystemStates
   MOVING,
   HOLDING,
   LEARNING,
+  DIFF,
   SYS_ERR,
   DEV,
   PID_TUNNING,
@@ -39,6 +40,7 @@ bool mayProceed = false;
 double globalVelocity = 0.7, globalAccel = 5;
 pair<Coor, vector<Matrix4d>> FK_out;
 Coor FK_coor;
+Coor diffCoor;
 MatrixXd J;
 JacobiSVD<MatrixXd> J_svd;
 Vector3d velocities_last;
@@ -468,13 +470,6 @@ void system_run()
       wristLowerJointMotor.SetStop();
     }
 
-    // motor_cmd[4] = Moteus::PositionMode::Command();
-    // motor_cmd[4].position = 0.0;
-    // motor_cmd[4].velocity = 0.0;
-    // wristLowerJointMotor.SetPosition(motor_cmd[4], &motor_position_fmt, &motor_query_fmt);
-
-    wristUpperJointMotor.SetStop();
-
     currentMotorPosition = MotorPosition(
         baseJointMotor.last_result().values.position,
         lowerJointMotor.last_result().values.position,
@@ -536,6 +531,53 @@ void system_run()
     break;
   case DEV:
     break;
+  case DIFF:
+
+    if (FK_motorLock)
+    {
+      baseJointMotor.SetBrake();
+      lowerJointMotor.SetBrake();
+      upperJointMotor.SetBrake();
+      wristBaseJointMotor.SetBrake();
+      wristLowerJointMotor.SetBrake();
+    }
+    else
+    {
+      baseJointMotor.SetStop();
+      lowerJointMotor.SetStop();
+      upperJointMotor.SetStop();
+      wristBaseJointMotor.SetStop();
+      wristLowerJointMotor.SetStop();
+    }
+
+    currentMotorPosition = MotorPosition(
+        baseJointMotor.last_result().values.position,
+        lowerJointMotor.last_result().values.position,
+        upperJointMotor.last_result().values.position,
+        wristBaseJointMotor.last_result().values.position,
+        wristLowerJointMotor.last_result().values.position,
+        wristUpperJointMotor.last_result().values.position);
+
+    FK_out = FK(currentMotorPosition.toJointAngle());
+    FK_coor = FK_out.first;
+
+    Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f | dist: %f\r\n",
+                  abs(diffCoor.x - FK_coor.x),
+                  abs(diffCoor.y - FK_coor.y),
+                  abs(diffCoor.z - FK_coor.z),
+                  abs(sqrt(pow((diffCoor.x - FK_coor.x), 2) + pow((diffCoor.y - FK_coor.y), 2) + pow((diffCoor.z - FK_coor.z), 2))));
+
+    if (usrKey_down)
+    {
+      Serial.println("Release key to set origin.");
+      rgbLedWrite(RGB_BUILTIN, 0, 0, 100);
+      while (usrKey_down)
+        ;
+      diffCoor = FK_coor;
+      digitalWrite(RGB_BUILTIN, LOW);
+    }
+    break;
+
   case PID_TUNNING:
     // pidTunningConfigPlot(*selectedMotorOBJ);
     NOT_IMPLEMENTED();

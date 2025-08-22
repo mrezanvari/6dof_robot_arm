@@ -115,6 +115,9 @@ void checkSerial()
   else if (cmd[0].equalsIgnoreCase("idle"))
     currentSystemState = IDLE;
 
+  else if (cmd[0].equalsIgnoreCase("probe"))
+    currentSystemState = DIFF;
+
   // switch case cannot be used for string in arduino ide!
   else if (cmd[0].equalsIgnoreCase("set"))
   {
