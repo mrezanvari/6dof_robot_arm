@@ -2,5 +2,5 @@
 .vscode
 .venv
 */build
-*/creds.h
-.a.out
+*.out
+*/*.out
