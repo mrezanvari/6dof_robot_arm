@@ -37,8 +37,8 @@ MatrixXd createJacobianMatrix(const vector<Matrix4d> &frames)
   for (size_t i = 1; i < frames.size(); ++i)
   {
     size_t ind = i - 1;
-    Block zi = frames[ind].block<3, 1>(0, 2);
-    Block Oi = frames[ind].block<3, 1>(0, 3);
+    Block zi = frames[i].block<3, 1>(0, 2); // i-1 for regular DH i for MDH
+    Block Oi = frames[i].block<3, 1>(0, 3);
     jacobian.block<3, 1>(0, ind) = zi.cross(o3 - Oi);
     jacobian.block<3, 1>(3, ind) = zi;
   }

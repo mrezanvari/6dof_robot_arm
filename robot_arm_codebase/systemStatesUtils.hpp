@@ -35,7 +35,6 @@ MotorPosition currentPosition;
 MotorPosition currentMotorPosition;
 Coor globalTraceCoor;
 Coor tempPos;
-const uint8_t ang = 40;
 bool mayProceed = false;
 double globalVelocity = 0.7, globalAccel = 5;
 pair<Coor, vector<Matrix4d>> FK_out;
@@ -46,9 +45,11 @@ JacobiSVD<MatrixXd> J_svd;
 Vector3d velocities_last;
 Vector3d velocities;
 bool FK_motorLock = true;
-
 vector<Coor> motionQuery;
 size_t queryIndex = 0;
+size_t probeCount = 0;
+const size_t probeLimit = 1;
+float probVal = 0.0;
 
 void initMotions()
 {
@@ -69,24 +70,17 @@ void initMotions()
 
 void printMotors()
 {
-  Serial.printf("x:%1.3f y:%1.3f z:%1.3f │ theta1: %1.3f theta2: %1.3f theta3: %1.3f ang1: %1.3f ang2: %1.3f ang3: %1.3f trajectory_complete: [%1d, %1d, %1d]\r\n",
-                globalUserPos.x,
-                globalUserPos.y,
-                globalUserPos.z,
-                baseJointMotor.last_result().values.position,
-                lowerJointMotor.last_result().values.position,
-                upperJointMotor.last_result().values.position,
-                baseJointMotor.last_result().values.position * ang,
-                (lowerJointMotor.last_result().values.position) * ang,
-                upperJointMotor.last_result().values.position * ang,
-                baseJointMotor.last_result().values.trajectory_complete,
-                lowerJointMotor.last_result().values.trajectory_complete,
-                upperJointMotor.last_result().values.trajectory_complete);
+  printf("θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f deg │ trajectory_complete: [%1d, %1d, %1d]\r\n",
+         deg(mpos2rad(baseJointMotor.last_result().values.position)),
+         deg(mpos2rad(lowerJointMotor.last_result().values.position)),
+         deg(mpos2rad(upperJointMotor.last_result().values.position)),
+         deg(wmpos2rad(wristBaseJointMotor.last_result().values.position)),
+         deg(wmpos2rad(wristLowerJointMotor.last_result().values.position)),
+         deg(wmpos2rad(wristUpperJointMotor.last_result().values.position)),
+         baseJointMotor.last_result().values.trajectory_complete,
+         lowerJointMotor.last_result().values.trajectory_complete,
+         upperJointMotor.last_result().values.trajectory_complete);
 }
-
-size_t probeCount = 0;
-const size_t probeLimit = 1;
-float probVal = 0.0;
 
 void run_homing()
 {
@@ -338,14 +332,7 @@ void system_run()
     wristLowerJointMotor.SetStop();
     wristUpperJointMotor.SetStop();
 
-    // printMotors();
-    printf("θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f deg\r\n",
-           deg(mpos2rad(baseJointMotor.last_result().values.position)),
-           deg(mpos2rad(lowerJointMotor.last_result().values.position)),
-           deg(mpos2rad(upperJointMotor.last_result().values.position)),
-           deg(wmpos2rad(wristBaseJointMotor.last_result().values.position)),
-           deg(wmpos2rad(wristLowerJointMotor.last_result().values.position)),
-           deg(wmpos2rad(wristUpperJointMotor.last_result().values.position)));
+    printMotors();
 
     break;
   case MOVING:

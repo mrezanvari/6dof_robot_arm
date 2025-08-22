@@ -31,7 +31,7 @@ const double alpha6 = rad(90);
 const double theta1_offset = 0;
 const double theta2_offset = 0;
 const double theta3_offset = 0;
-const double theta4_offset = 0; // will rotate the wrist base to point upwards when arm is streached to one side
+const double theta4_offset = 0;
 const double theta5_offset = 0;
 const double theta6_offset = 0;
 
