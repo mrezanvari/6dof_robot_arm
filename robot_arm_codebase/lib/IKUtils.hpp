@@ -7,6 +7,24 @@ const float IK_a1 = 167.719;                          // height of lower joint
 const float IK_a2 = 250.201;                          // length of lower arm
 const float IK_a3 = 177.485 + 54.70 + 95.069 + 58.60; // length of upper arm -> center of middle +  safe offset
 
+const double theta1_max = rad(0);
+const double theta1_min = rad(-180);
+
+const double theta2_max = rad(0);
+const double theta2_min = rad(-180);
+
+const double theta3_max = rad(130);
+const double theta3_min = rad(-130);
+
+const double theta4_max = rad(0);
+const double theta4_min = rad(360);
+
+const double theta5_max = rad(130);
+const double theta5_min = rad(-130);
+
+const double theta6_max = rad(0);
+const double theta6_min = rad(360);
+
 bool validateSolution(const Coor &newCoor, const pair<JointAngle, JointAngle> &solutions, JointAngle *newMotorAngle)
 {
   ValidationFlags flags;

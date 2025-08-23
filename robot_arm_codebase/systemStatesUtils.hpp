@@ -472,24 +472,6 @@ void system_run()
     auto singular_out = IsSingular(J);
     bool isAtSingularity = singular_out.first;
 
-    auto mag = sqrt(pow(FK_coor.x, 2) + pow(FK_coor.y, 2) + pow(FK_coor.z - d1, 2));
-
-    // Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f | mag: % 5.3f │ θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f rad| ∞: %d │ rank: %d | J11 det: % 10.8f J22 det:% .20G\r\n",
-    //               FK_coor.x,
-    //               FK_coor.y,
-    //               FK_coor.z,
-    //               mag,
-    //               mpos2rad(baseJointMotor.last_result().values.position),
-    //               mpos2rad(lowerJointMotor.last_result().values.position),
-    //               mpos2rad(upperJointMotor.last_result().values.position),
-    //               wmpos2rad(wristBaseJointMotor.last_result().values.position),
-    //               wmpos2rad(wristLowerJointMotor.last_result().values.position),
-    //               wmpos2rad(wristUpperJointMotor.last_result().values.position),
-    //               isAtSingularity,
-    //               J_svd.rank(),
-    //               singular_out.second.first,
-    //               singular_out.second.second);
-
     Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f │ θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f deg | ∞: %d │ rank: %d | J11 det: % 10.8f J22 det:% .20G\r\n",
                   FK_coor.x,
                   FK_coor.y,

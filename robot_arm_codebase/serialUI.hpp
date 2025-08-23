@@ -180,40 +180,8 @@ void checkSerial()
       }
 
       String command = "d exact 0";
-      String command2 = "d rezero";
       mjbots::moteus::RequireReindex::Command rrcmd;
 
-      // if (cmd[2].equalsIgnoreCase("arm"))
-      // {
-      //   baseJointMotor.SetRequireReindex(rrcmd);
-      //   lowerJointMotor.SetRequireReindex(rrcmd);
-      //   upperJointMotor.SetRequireReindex(rrcmd);
-      //   delay(10);
-      //   baseJointMotor.DiagnosticCommand(command);
-      //   lowerJointMotor.DiagnosticCommand(command);
-      //   upperJointMotor.DiagnosticCommand(command);
-      //   baseJointMotor.DiagnosticCommand(command2);
-      //   lowerJointMotor.DiagnosticCommand(command2);
-      //   upperJointMotor.DiagnosticCommand(command2);
-
-      //   Serial.println("Arm zeroed");
-      // }
-      // else if (cmd[2].equalsIgnoreCase("wrist"))
-      // {
-      //   wristLowerJointMotor.SetRequireReindex(rrcmd);
-      //   wristBaseJointMotor.SetRequireReindex(rrcmd);
-      //   wristUpperJointMotor.SetRequireReindex(rrcmd);
-      //   delay(10);
-      //   wristBaseJointMotor.DiagnosticCommand(command);
-      //   wristUpperJointMotor.DiagnosticCommand(command);
-      //   wristLowerJointMotor.DiagnosticCommand(command);
-      //   wristBaseJointMotor.DiagnosticCommand(command2);
-      //   wristUpperJointMotor.DiagnosticCommand(command2);
-      //   wristLowerJointMotor.DiagnosticCommand(command2);
-      //   Serial.println("Wrist zeroed");
-      // }
-      // else if (cmd[2].equalsIgnoreCase("all"))
-      // {
       baseJointMotor.SetStop();
       lowerJointMotor.SetStop();
       upperJointMotor.SetStop();
@@ -246,7 +214,6 @@ void checkSerial()
       wristBaseJointMotor.SetStop();
       wristLowerJointMotor.SetStop();
       wristUpperJointMotor.SetStop();
-      // }
 
       Serial.println("Arm and Wrist zeroed");
 
