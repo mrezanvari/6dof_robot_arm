@@ -152,24 +152,32 @@ void checkSerial()
       Serial.printf("Set pos to x:%2f y:%2f z:%2f\r\n", tempPos.x, tempPos.y, tempPos.z);
     }
 
+    else if (cmd[1].equalsIgnoreCase("ang"))
+    {
+      if (cmdSize != 4)
+      {
+        Serial.println("Command Error!  use \"help\"");
+        return;
+      }
+
+      int motor_ind = cmd[2].toInt();
+      if (motor_ind > jointMotors.size() || motor_ind <= 0)
+      {
+        Serial.println("Index not permitted read \"help\"");
+        return;
+      }
+
+      double ang = cmd[3].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[3].toDouble();
+      double pos = (motor_ind < 3) ? mot_a(ang) : wmot_a(ang);
+      Serial.printf("angle set for motor %d as % .3f which corresponds to % .5f motor postion\r\n", motor_ind, ang, pos);
+
+      String cmd = "d pos " + String(pos) + " 0 nan v0.4";
+      jointMotors[motor_ind - 1].DiagnosticCommand(cmd);
+      return;
+    }
+
     else if (cmd[1].equalsIgnoreCase("lock"))
       FK_motorLock = !FK_motorLock;
-
-    // else if (cmd[1].equalsIgnoreCase("ang"))
-    // {
-    //   if (cmdSize != 5)
-    //   {
-    //     Serial.println("Command Error!  use \"help\"");
-    //     return;
-    //   }
-    //   // userGlobalPos = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
-
-    //   tempAngle.theta1 = cmd[2].equalsIgnoreCase("nan") ? tempAngle.theta1 : mot_a(cmd[2].toFloat());
-    //   tempAngle.theta2 = cmd[3].equalsIgnoreCase("nan") ? tempAngle.theta2 : mot_a(cmd[3].toFloat());
-    //   tempAngle.theta3 = cmd[4].equalsIgnoreCase("nan") ? tempAngle.theta3 : mot_a(cmd[4].toFloat());
-
-    //   Serial.printf("Set pos to x:%2f y:%2f z:%2f\r\n", globalUserPos.x, globalUserPos.y, globalUserPos.z);
-    // }
 
     else if (cmd[1].equalsIgnoreCase("zero"))
     {
