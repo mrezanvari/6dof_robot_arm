@@ -43,6 +43,7 @@ const vector<DHParams> globalJointParams =
 
 Matrix4d createDHMatrix(double theta, DHParams dhparams)
 {
+  theta += dhparams.theta_offset;
   double ct = cos(theta);
   double st = sin(theta);
   double ca = cos(dhparams.alpha);
@@ -70,7 +71,7 @@ pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams>
 
   for (size_t i = 0; i < jointParams.size(); ++i)
   {
-    Matrix4d T = createDHMatrix(angles.thetas[i] + jointParams[i].theta_offset, jointParams[i]);
+    Matrix4d T = createDHMatrix(angles.thetas[i], jointParams[i]);
     frames[i + 1] = frames[i] * T;
   }
 
@@ -78,4 +79,13 @@ pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams>
 
   // return pair(Coor(position(1), position(2), position(0)), frames);
   return pair(Coor(position(0), position(1), position(2)), frames);
+}
+
+Coor fast_FK(const JointAngle &angles, const vector<DHParams> &jointParams = globalJointParams)
+{
+  Coor position{140.54 * sin(angles.theta1) * sin(angles.theta4) * sin(angles.theta5) + 2.785 * sin(angles.theta1) * cos(angles.theta4) + 19.508 * sin(angles.theta1) - 2.785 * sin(angles.theta4) * cos(angles.theta1) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta5) * cos(angles.theta1) * cos(angles.theta4) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta2 + angles.theta3) * cos(angles.theta1) * cos(angles.theta5) + 231.03 * sin(angles.theta2 + angles.theta3) * cos(angles.theta1) + 250.201 * cos(angles.theta1) * cos(angles.theta2),
+                -2.785 * sin(angles.theta1) * sin(angles.theta4) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta1) * sin(angles.theta5) * cos(angles.theta4) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta1) * sin(angles.theta2 + angles.theta3) * cos(angles.theta5) + 231.03 * sin(angles.theta1) * sin(angles.theta2 + angles.theta3) + 250.201 * sin(angles.theta1) * cos(angles.theta2) - 140.54 * sin(angles.theta4) * sin(angles.theta5) * cos(angles.theta1) - 2.785 * cos(angles.theta1) * cos(angles.theta4) - 19.508 * cos(angles.theta1),
+                250.201 * sin(angles.theta2) - 2.785 * sin(angles.theta4) * sin(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta5) * sin(angles.theta2 + angles.theta3) * cos(angles.theta4) - 140.54 * cos(angles.theta5) * cos(angles.theta2 + angles.theta3) - 231.03 * cos(angles.theta2 + angles.theta3) + 167.719};
+
+  return position;
 }

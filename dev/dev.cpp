@@ -70,6 +70,7 @@ int main()
            deg(testAngle.theta2),
            deg(testAngle.theta3),
            deg(testAngle.theta4),
+
            deg(testAngle.theta5),
            deg(testAngle.theta6));
     auto FK_out = FK(testAngle);
@@ -77,7 +78,9 @@ int main()
 
     vector<Matrix4d> frames = FK_out.second;
 
-    printf("FK Coor->     x= %.3f y= %.3f z= %.3f\r\n", FK_coor.x, FK_coor.y, FK_coor.z);
+    printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_coor.x, FK_coor.y, FK_coor.z);
+    FK_coor = fast_FK(testAngle);
+    printf("Fast FK Coor-> x= %.3f y= %.3f z= %.3f\r\n", FK_coor.x, FK_coor.y, FK_coor.z);
 
     // for (int i = 0; i < 6; i++)
     // {
