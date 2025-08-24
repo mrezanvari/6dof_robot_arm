@@ -157,3 +157,26 @@ struct DHParams
                                          limits(limits),
                                          isModifiedDH(isModifiedDH) {}
 };
+
+struct IKSoutionSet
+{
+    /*
+        4 x arm solution branches
+        2 x wrist solution branches
+    */
+    struct LeftArm
+    {
+        JointAngle elbowUp;
+        JointAngle elbowDown;
+    };
+
+    struct RightArm
+    {
+        JointAngle elbowUp;
+        JointAngle elbowDown;
+    };
+
+    LeftArm leftArm;
+    RightArm rightArm;
+    pair<JointAngle, JointAngle> wrist;
+};

@@ -38,6 +38,8 @@ int main()
     printf("Coor  ->         x= %1.2f y= %1.2f z= %1.2f\r\n", globalUserPos.x, globalUserPos.y, globalUserPos.z);
     bool mayProceed = IK(globalUserPos, &tempAngle);
 
+    tempAngle.theta3 = rad(90) - tempAngle.theta3;
+
     MotorPosition tempPos = tempAngle.toMotorPosition();
     printf("IK Out ->          θ1=%1.3f θ2=%1.3f θ3=%1.3f\r\n\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
     if (!mayProceed)
@@ -50,20 +52,20 @@ int main()
     cout << "──────────────────────────────────────────────────────────────────────────────────────────────────────────" << endl;
 
     JointAngle testAngle = {
-        rad(137.563),
-        rad(48),
-        rad(6.517),
-        rad(-217.895),
-        rad(100.382),
-        rad(28451.742)};
+        rad(0),
+        rad(60),
+        rad(0),
+        rad(-70),
+        rad(-120),
+        rad(0)};
 
     // JointAngle testAngle(
-    //     rad(0),
-    //     rad(-90),
-    //     rad(+90),
-    //     rad(0),
-    //     rad(+90),
-    //     rad(0));
+    // rad(0),
+    // rad(-90),
+    // rad(+90),
+    // rad(0),
+    // rad(+90),
+    // rad(0));
 
     printf("\r\nFor θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f deg\r\n",
            deg(testAngle.theta1),
