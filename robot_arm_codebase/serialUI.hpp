@@ -20,7 +20,7 @@ Coor tempCoor;
 
 void checkSerial()
 {
-  String cmd[10]; // will hold all of the commands and values for processing...
+  vector<String> cmd; // will hold all of the commands and values for processing...
 
   if (!Serial.available())
     return;
@@ -64,17 +64,10 @@ void checkSerial()
     while (serialIn.length() > 0 && serialIn.charAt(0) == ' ')
       serialIn.remove(0, 1);
 
-    cmd[++cmdIndex] = token;
+    cmd.push_back(token);
   }
 
-  int cmdSize = 0;
-
-  for (int i = 0; i < sizeof(cmd) / sizeof(cmd[0]); i++)
-  {
-    if (cmd[i] == NULL)
-      break;
-    cmdSize++;
-  }
+  int cmdSize = cmd.size();
 
   if (cmdSize <= 0)
     return;
@@ -255,7 +248,7 @@ void checkSerial()
 
       updteInterval = cmd[2].toFloat();
 
-      Serial.printf("Set interval to 1.2f\r\n", updteInterval);
+      Serial.printf("Set interval to %1.2f\r\n", updteInterval);
     }
 
     else if (cmd[1].equalsIgnoreCase("vel"))
@@ -269,7 +262,7 @@ void checkSerial()
 
       globalVelocity = cmd[2].equalsIgnoreCase("nan") ? 1 : cmd[2].toDouble();
 
-      Serial.printf("Set vel to 1.2f\r\n", globalVelocity);
+      Serial.printf("Set vel to %1.2f\r\n", globalVelocity);
     }
 
     else if (cmd[1].equalsIgnoreCase("acc"))
@@ -283,7 +276,7 @@ void checkSerial()
 
       globalAccel = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
 
-      Serial.printf("Set accel to 1.2f\r\n", globalAccel);
+      Serial.printf("Set accel to %1.2f\r\n", globalAccel);
     }
   }
 
