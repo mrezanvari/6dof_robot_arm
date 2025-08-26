@@ -3,9 +3,9 @@ using namespace std;
 
 #include <math.h>
 
-const double IK_a1 = 167.719;         // height of lower joint
-const double IK_a2 = 250.201;         // length of lower arm
-const double IK_a3 = 231.03 + 140.54; // length of upper arm -> center of middle +  safe offset
+const double IK_a1 = 167.719; // height of lower joint
+const double IK_a2 = 250.201; // length of lower arm
+const double IK_a3 = 231.03;  // length of upper arm -> center spherical wrist
 
 const double theta1_max = rad(0);
 const double theta1_min = rad(-180);
