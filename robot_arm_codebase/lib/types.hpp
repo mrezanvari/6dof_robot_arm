@@ -99,7 +99,7 @@ MotorPosition JointAngle::toMotorPosition()
 {
     return MotorPosition(mot_r(theta1),
                          mot_r(theta2),
-                         mot_r(((M_PI / 2) - theta3)), // best to make it so it requires no change but for now...
+                         mot_r(theta3),
                          wmot_r(theta4),
                          wmot_r(theta5),
                          wmot_r(theta6));

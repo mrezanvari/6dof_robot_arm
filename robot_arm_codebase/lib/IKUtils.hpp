@@ -77,13 +77,15 @@ bool IK_Arm(const Coor newpos, JointAngle *newMotorAngle)
 
   armSolutions.rightArm.elbowUp.theta1 = atan2(newpos.x, newpos.z);
   armSolutions.rightArm.elbowUp.theta2 = phi1 + phi2;
-  armSolutions.rightArm.elbowUp.theta3 = M_PI - phi3;
+  armSolutions.rightArm.elbowUp.theta3 = phi3 - (M_PI / 2); // from the notes: M_PI - phi3 but the 0 of joint 3 in textbook is pointing straight down so -90
 
   armSolutions.rightArm.elbowDown.theta1 = armSolutions.rightArm.elbowUp.theta1;
   armSolutions.rightArm.elbowDown.theta2 = phi2 - phi1;
   armSolutions.rightArm.elbowDown.theta3 = -armSolutions.rightArm.elbowUp.theta3;
 
   // add left arm up and down solutions too
+  armSolutions.leftArm.elbowUp = armSolutions.rightArm.elbowUp;     // for now ignore left arm
+  armSolutions.leftArm.elbowDown = armSolutions.rightArm.elbowDown; // for now ignore left arm
 
   return validateArmSolution(newpos, armSolutions, newMotorAngle);
 }
