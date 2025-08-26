@@ -99,7 +99,7 @@ void checkSerial()
   else if (cmd[0].equalsIgnoreCase("home"))
     currentSystemState = HOMING;
 
-  else if (cmd[0].equalsIgnoreCase("dev"))
+  else if (cmd[0].equalsIgnoreCase("ik"))
     currentSystemState = MOVING;
 
   else if (cmd[0].equalsIgnoreCase("fk"))
@@ -147,7 +147,7 @@ void checkSerial()
 
     else if (cmd[1].equalsIgnoreCase("ang"))
     {
-      if (cmdSize != 4)
+      if (cmdSize < 4 || cmdSize > 5)
       {
         Serial.println("Command Error!  use \"help\"");
         return;
@@ -162,9 +162,12 @@ void checkSerial()
 
       double ang = cmd[3].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[3].toDouble();
       double pos = (motor_ind < 3) ? mot_a(ang) : wmot_a(ang);
-      Serial.printf("angle set for motor %d as % .3f which corresponds to % .5f motor postion\r\n", motor_ind, ang, pos);
+      double vel = 0.4;
+      if (cmdSize == 5)
+        vel = cmd[4].toDouble();
+      Serial.printf("angle set for motor %d as % .3f which corresponds to % .5f motor postion with velocity %.3f\r\n", motor_ind, ang, pos, vel);
 
-      String cmd = "d pos " + String(pos) + " 0 nan v0.4";
+      String cmd = "d pos " + String(pos) + " 0 nan v" + String(vel);
       jointMotors[motor_ind - 1].DiagnosticCommand(cmd);
       return;
     }
