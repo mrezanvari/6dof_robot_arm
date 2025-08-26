@@ -70,7 +70,7 @@ void initMotions()
 
 void printMotors()
 {
-  printf("θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f deg │ trajectory_complete: [%1d, %1d, %1d]\r\n",
+  printf("θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f deg │ trajectory_complete: [%1d, %1d, %1d, %1d, %1d, %1d]\r\n",
          deg(mpos2rad(baseJointMotor.last_result().values.position)),
          deg(mpos2rad(lowerJointMotor.last_result().values.position)),
          deg(mpos2rad(upperJointMotor.last_result().values.position)),
@@ -79,7 +79,10 @@ void printMotors()
          deg(wmpos2rad(wristUpperJointMotor.last_result().values.position)),
          baseJointMotor.last_result().values.trajectory_complete,
          lowerJointMotor.last_result().values.trajectory_complete,
-         upperJointMotor.last_result().values.trajectory_complete);
+         upperJointMotor.last_result().values.trajectory_complete,
+         wristBaseJointMotor.last_result().values.trajectory_complete,
+         wristLowerJointMotor.last_result().values.trajectory_complete,
+         wristUpperJointMotor.last_result().values.trajectory_complete);
 }
 
 void run_homing()
@@ -321,20 +324,23 @@ void system_run()
     initMotions();
 
     break;
+
   case HOMING:
     run_homing();
     break;
+
   case IDLE:
-    baseJointMotor.SetBrake();
-    upperJointMotor.SetBrake();
-    lowerJointMotor.SetBrake();
-    wristBaseJointMotor.SetStop();
-    wristLowerJointMotor.SetStop();
-    wristUpperJointMotor.SetStop();
+    baseJointMotor.Poll();
+    upperJointMotor.Poll();
+    lowerJointMotor.Poll();
+    wristBaseJointMotor.Poll();
+    wristLowerJointMotor.Poll();
+    wristUpperJointMotor.Poll();
 
     printMotors();
 
     break;
+
   case MOVING:
   {
     tempPos.x += globalTraceCoor.x;
@@ -438,6 +444,7 @@ void system_run()
     delay(updteInterval);
     break;
   }
+
   case HOLDING:
   {
     if (FK_motorLock)
@@ -491,17 +498,20 @@ void system_run()
 
     break;
   }
+
   case LEARNING:
 
     NOT_IMPLEMENTED();
     break;
+
   case SYS_ERR:
     NOT_IMPLEMENTED();
     break;
+
   case DEV:
     break;
-  case DIFF:
 
+  case DIFF:
     if (FK_motorLock)
     {
       baseJointMotor.SetBrake();
@@ -527,8 +537,7 @@ void system_run()
         wristLowerJointMotor.last_result().values.position,
         wristUpperJointMotor.last_result().values.position);
 
-    FK_out = FK(currentMotorPosition.toJointAngle());
-    FK_coor = FK_out.first;
+    FK_coor = FK_precise(currentMotorPosition.toJointAngle());
 
     Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f | dist: %f\r\n",
                   abs(diffCoor.x - FK_coor.x),

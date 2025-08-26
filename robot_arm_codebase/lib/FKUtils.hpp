@@ -7,39 +7,7 @@
 using namespace Eigen;
 using Eigen::MatrixXd;
 
-const vector<DHParams> globalJointParams =
-    {
-        DHParams(
-            167.719,
-            0.0,
-            0.0,
-            0.0),
-        DHParams(
-            19.898,
-            0,
-            rad(90),
-            0.0),
-        DHParams(
-            -0.39,
-            250.201,
-            0,
-            0.0),
-        DHParams(
-            231.03,
-            0,
-            rad(90),
-            0.0),
-        DHParams(
-            2.785,
-            0,
-            -rad(90),
-            0.0),
-        DHParams(
-            140.54,
-            0,
-            rad(90),
-            0.0),
-};
+#include "RobotParams.hpp"
 
 Matrix4d createDHMatrix(double theta, DHParams dhparams)
 {
@@ -65,7 +33,6 @@ Matrix4d createDHMatrix(double theta, DHParams dhparams)
 
 pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams> &jointParams = globalJointParams)
 {
-
   vector<Matrix4d> frames(jointParams.size() + 1); // 1 frame per joint + 1 first identity frame for jacobian
   frames[0] = Matrix4d::Identity();
 
@@ -81,7 +48,7 @@ pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams>
   return pair(Coor(position(0), position(1), position(2)), frames);
 }
 
-Coor fast_FK(const JointAngle &angles, const vector<DHParams> &jointParams = globalJointParams)
+Coor FK_precise(const JointAngle &angles)
 {
   Coor position{140.54 * sin(angles.theta1) * sin(angles.theta4) * sin(angles.theta5) + 2.785 * sin(angles.theta1) * cos(angles.theta4) + 19.508 * sin(angles.theta1) - 2.785 * sin(angles.theta4) * cos(angles.theta1) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta5) * cos(angles.theta1) * cos(angles.theta4) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta2 + angles.theta3) * cos(angles.theta1) * cos(angles.theta5) + 231.03 * sin(angles.theta2 + angles.theta3) * cos(angles.theta1) + 250.201 * cos(angles.theta1) * cos(angles.theta2),
                 -2.785 * sin(angles.theta1) * sin(angles.theta4) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta1) * sin(angles.theta5) * cos(angles.theta4) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta1) * sin(angles.theta2 + angles.theta3) * cos(angles.theta5) + 231.03 * sin(angles.theta1) * sin(angles.theta2 + angles.theta3) + 250.201 * sin(angles.theta1) * cos(angles.theta2) - 140.54 * sin(angles.theta4) * sin(angles.theta5) * cos(angles.theta1) - 2.785 * cos(angles.theta1) * cos(angles.theta4) - 19.508 * cos(angles.theta1),
