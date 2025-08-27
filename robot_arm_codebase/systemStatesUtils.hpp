@@ -50,6 +50,8 @@ size_t queryIndex = 0;
 size_t probeCount = 0;
 const size_t probeLimit = 1;
 float probVal = 0.0;
+double thet5 = 20;
+int moveDir = 1;
 
 void initMotions()
 {
@@ -509,7 +511,126 @@ void system_run()
     break;
 
   case DEV:
+  {
+    // x:-164.538 y: 353.972 z: 149.874 │ θ1: 116.227 θ2: 33.157 θ3: 51.057 θ4: -3.724 θ5: -104.662 θ6: 62477.172 deg
+
+    thet5 += (moveDir * 0.1);
+    if (thet5 >= 130)
+      moveDir = -1;
+    else if (thet5 <= 20)
+      moveDir = 1;
+
+    double phi = rad(134.54487);
+    double theta = rad(thet5);
+    double psi = rad(0);
+
+    auto O = Vector3d{{
+        -352.764,
+        357.884,
+        311.938,
+    }};
+
+    Matrix3d R{{-sin(phi) * sin(psi) + cos(phi) * cos(psi) * cos(theta),
+                -sin(phi) * cos(psi) - sin(psi) * cos(phi) * cos(theta),
+                sin(theta) * cos(phi)},
+               {sin(phi) * cos(psi) * cos(theta) + sin(psi) * cos(phi),
+                -sin(phi) * sin(psi) * cos(theta) + cos(phi) * cos(psi),
+                sin(phi) * sin(theta)},
+               {-sin(theta) * cos(psi),
+                sin(psi) * sin(theta),
+                cos(theta)}};
+
+    auto oc = O - (globalJointParams.back().d * R.col(2));
+
+    Coor ikIn;
+    ikIn.x = oc(1);
+    ikIn.y = oc(2);
+    ikIn.z = oc(0);
+    tempAngle = JointAngle();
+    IK(ikIn, &tempAngle);
+    FK_out = FK(tempAngle);
+    auto frames = FK_out.second;
+
+    auto H03 = frames[3];
+    auto R03 = H03.block<3, 3>(0, 0);
+    auto R30 = R03.inverse();
+    auto R36 = R30 * R;
+
+    auto ct4 = -R36(1, 2);
+    double t5 = acos(ct4);
+
+    tempAngle.theta5 = t5;
+    auto ct5 = R36(1, 0) / sin(t5);
+    tempAngle.theta6 = acos(ct5);
+
+    auto ct3 = R36(0, 2) / sin(t5);
+    tempAngle.theta4 = acos(ct3);
+
+    FK_out = FK(tempAngle);
+
+    currentPosition = tempAngle.toMotorPosition();
+
+    // motor_cmd[0] = Moteus::PositionMode::Command();
+    // motor_cmd[0].position = currentPosition.pos1;
+    // motor_cmd[0].velocity = 0.0;
+    // motor_cmd[0].maximum_torque = std::numeric_limits<float>::quiet_NaN();
+    // motor_cmd[0].velocity_limit = globalVelocity;
+    // motor_cmd[0].accel_limit = globalAccel;
+    // baseJointMotor.SetPosition(motor_cmd[0], &motor_position_fmt, &motor_query_fmt);
+    baseJointMotor.SetBrake();
+
+    motor_cmd[1] = Moteus::PositionMode::Command();
+    motor_cmd[1].position = currentPosition.pos2;
+    motor_cmd[1].velocity = 0.0;
+    motor_cmd[1].maximum_torque = std::numeric_limits<float>::quiet_NaN();
+    motor_cmd[1].velocity_limit = globalVelocity;
+    motor_cmd[1].accel_limit = globalAccel;
+    lowerJointMotor.SetPosition(motor_cmd[1], &motor_position_fmt, &motor_query_fmt);
+
+    motor_cmd[2] = Moteus::PositionMode::Command();
+    motor_cmd[2].position = currentPosition.pos3;
+    motor_cmd[2].velocity = 0.0;
+    motor_cmd[2].maximum_torque = std::numeric_limits<float>::quiet_NaN();
+    motor_cmd[2].velocity_limit = globalVelocity;
+    motor_cmd[2].accel_limit = globalAccel;
+    upperJointMotor.SetPosition(motor_cmd[2], &motor_position_fmt, &motor_query_fmt);
+
+    motor_cmd[3] = Moteus::PositionMode::Command();
+    motor_cmd[3].position = currentPosition.pos4;
+    motor_cmd[3].velocity = 0.0;
+    motor_cmd[3].maximum_torque = std::numeric_limits<float>::quiet_NaN();
+    motor_cmd[3].velocity_limit = globalVelocity;
+    motor_cmd[3].accel_limit = globalAccel;
+    wristBaseJointMotor.SetPosition(motor_cmd[3], &motor_position_fmt, &motor_query_fmt);
+
+    motor_cmd[4] = Moteus::PositionMode::Command();
+    motor_cmd[4].position = currentPosition.pos5;
+    motor_cmd[4].velocity = 0.0;
+    motor_cmd[4].maximum_torque = std::numeric_limits<float>::quiet_NaN();
+    motor_cmd[4].velocity_limit = globalVelocity;
+    motor_cmd[4].accel_limit = globalAccel;
+    wristLowerJointMotor.SetPosition(motor_cmd[4], &motor_position_fmt, &motor_query_fmt);
+
+    // motor_cmd[5] = Moteus::PositionMode::Command();
+    // motor_cmd[5].position = currentPosition.pos6;
+    // motor_cmd[5].velocity = 0.0;
+    // motor_cmd[5].maximum_torque = std::numeric_limits<float>::quiet_NaN();
+    // motor_cmd[5].velocity_limit = globalVelocity;
+    // motor_cmd[5].accel_limit = globalAccel;
+    wristUpperJointMotor.SetStop();
+
+    printf("x= %.3f y= %.3f z= %.3f │ θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f │ roll/phi: % .5f pitch/theta: % .5f yaw/psi: % .5f\r\n",
+           FK_out.first.x, FK_out.first.y, FK_out.first.z,
+           deg(mpos2rad(baseJointMotor.last_result().values.position)),
+           deg(mpos2rad(lowerJointMotor.last_result().values.position)),
+           deg(mpos2rad(upperJointMotor.last_result().values.position)),
+           deg(wmpos2rad(wristBaseJointMotor.last_result().values.position)),
+           deg(wmpos2rad(wristLowerJointMotor.last_result().values.position)),
+           deg(wmpos2rad(wristUpperJointMotor.last_result().values.position)),
+           deg(phi), deg(theta), deg(psi));
+    delay(updteInterval);
     break;
+  }
 
   case DIFF:
     if (FK_motorLock)
