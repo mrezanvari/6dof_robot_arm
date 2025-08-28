@@ -1,3 +1,4 @@
+#pragma once
 #ifdef ARDUINO
 #include <ArduinoEigenDense.h>
 #else
@@ -31,6 +32,19 @@ Matrix4d createDHMatrix(double theta, DHParams dhparams)
       {0, 0, 0, 1}};
 }
 
+Matrix3d createRotationMatrix(Orientation orientation)
+{
+  double phi = orientation.phi;
+  double theta = orientation.theta;
+  double psi = orientation.psi;
+
+  Matrix3d R{{-sin(phi) * sin(psi) + cos(phi) * cos(psi) * cos(theta), -sin(phi) * cos(psi) - sin(psi) * cos(phi) * cos(theta), sin(theta) * cos(phi)},
+             {sin(phi) * cos(psi) * cos(theta) + sin(psi) * cos(phi), -sin(phi) * sin(psi) * cos(theta) + cos(phi) * cos(psi), sin(phi) * sin(theta)},
+             {-sin(theta) * cos(psi), sin(psi) * sin(theta), cos(theta)}};
+
+  return R;
+}
+
 pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams> &jointParams = globalJointParams)
 {
   vector<Matrix4d> frames(jointParams.size() + 1); // 1 frame per joint + 1 first identity frame for jacobian
@@ -50,9 +64,13 @@ pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams>
 
 Coor FK_precise(const JointAngle &angles)
 {
+  /*
+    Created based on the paramters for the probe -> includes all offsets + centre of the joint 5 to the centre of the ball
+    Used primarily for the PROBE mode
+  */
   Coor position{140.54 * sin(angles.theta1) * sin(angles.theta4) * sin(angles.theta5) + 2.785 * sin(angles.theta1) * cos(angles.theta4) + 19.508 * sin(angles.theta1) - 2.785 * sin(angles.theta4) * cos(angles.theta1) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta5) * cos(angles.theta1) * cos(angles.theta4) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta2 + angles.theta3) * cos(angles.theta1) * cos(angles.theta5) + 231.03 * sin(angles.theta2 + angles.theta3) * cos(angles.theta1) + 250.201 * cos(angles.theta1) * cos(angles.theta2),
                 -2.785 * sin(angles.theta1) * sin(angles.theta4) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta1) * sin(angles.theta5) * cos(angles.theta4) * cos(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta1) * sin(angles.theta2 + angles.theta3) * cos(angles.theta5) + 231.03 * sin(angles.theta1) * sin(angles.theta2 + angles.theta3) + 250.201 * sin(angles.theta1) * cos(angles.theta2) - 140.54 * sin(angles.theta4) * sin(angles.theta5) * cos(angles.theta1) - 2.785 * cos(angles.theta1) * cos(angles.theta4) - 19.508 * cos(angles.theta1),
-                250.201 * sin(angles.theta2) - 2.785 * sin(angles.theta4) * sin(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta5) * sin(angles.theta2 + angles.theta3) * cos(angles.theta4) - 140.54 * cos(angles.theta5) * cos(angles.theta2 + angles.theta3) - 231.03 * cos(angles.theta2 + angles.theta3) + 167.71899999999999};
+                250.201 * sin(angles.theta2) - 2.785 * sin(angles.theta4) * sin(angles.theta2 + angles.theta3) + 140.54 * sin(angles.theta5) * sin(angles.theta2 + angles.theta3) * cos(angles.theta4) - 140.54 * cos(angles.theta5) * cos(angles.theta2 + angles.theta3) - 231.03 * cos(angles.theta2 + angles.theta3) + 167.719};
 
   return position;
 }

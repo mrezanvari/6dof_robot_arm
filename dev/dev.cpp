@@ -12,6 +12,12 @@ using namespace Eigen;
 using Eigen::MatrixXd;
 
 double thresh = 1e-5;
+vector<double> globalEndEffectorOrientation = {0, 0, 0};
+
+Orientation devOrientation(
+    rad(140),
+    rad(50),
+    0);
 
 template <typename Derived>
 void print_mat(const MatrixBase<Derived> &mat, bool newline = true, string formatstr = "  % 16.10G│")
@@ -36,7 +42,7 @@ int main()
     globalUserPos.z = -200;
 
     printf("Coor  ->         x= %1.2f y= %1.2f z= %1.2f\r\n", globalUserPos.x, globalUserPos.y, globalUserPos.z);
-    bool mayProceed = IK(globalUserPos, &tempAngle);
+    bool mayProceed = IK_Arm(globalUserPos, &tempAngle);
 
     tempAngle.theta3 = rad(90) - tempAngle.theta3;
 
@@ -123,18 +129,19 @@ int main()
     cout << "Singulars:";
     print_mat(svd.singularValues().transpose());
 
-    VectorXd v{{0,   // linear vx
-                10,  // linear vy --> move 1 cm/sec upwards
-                0,   // linear vz
-                0,   // angular vx
-                0,   // angular vy
-                0}}; // angular vz
+    VectorXd v{{1,   // linear vx
+                1,   // linear vy --> move 1 cm/sec upwards
+                1,   // linear vz
+                1,   // angular vx
+                1,   // angular vy
+                1}}; // angular vz
 
-    VectorXd velocities = getJointVelocities(J, v);
-    velocities /= 2 * M_PI; // devide by 2*M_PI for rev/sec
+    VectorXd velocities(6);
+    // velocities = getJointVelocities(J, v);
+    // velocities /= 2 * M_PI; // devide by 2*M_PI for rev/sec
+    // velocities *= 8;
 
     print_mat(velocities, true, " % .15f");
-
     printf("JVel v1:% .10f v2:% .10f v3:% .10f \r\n",
            velocities(0),
            velocities(1),
@@ -150,7 +157,7 @@ int main()
         rad(18.829),
         rad(0.052),
         rad(61.537),
-        rad(90)};
+        rad(0)};
 
     printf("\r\nFor                θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f deg\r\n",
            deg(testAngle.theta1),
@@ -165,24 +172,24 @@ int main()
 
     printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
 
-    auto Tn = frames.back();
-    auto Rn = Tn.block<3, 3>(0, 0);
+    Matrix4d Tn = frames.back();
+    Matrix3d Rn = Tn.block<3, 3>(0, 0);
 
-    print_mat(Tn);
-
-    double theta = acos(Rn(2, 2));
+    double theta = atan2(sqrt(1 - pow(Rn(2, 2), 2)), Rn(2, 2));
     double phi = atan2(Rn(1, 2), Rn(0, 2));
     double psi = atan2(Rn(2, 1), -Rn(2, 0));
 
-    auto O = Vector3d{{
+    Vector3d O{{
         FK_out.first.x,
         FK_out.first.y,
         FK_out.first.z,
     }};
 
-    phi = rad(100);
-    theta = rad(56.02402);
+    phi = rad(134.54487);  // 134.54487
+    theta = rad(56.02402); // 56.02402
     psi = rad(0);
+
+    printf("\r\nroll/phi: % .5f\r\npitch/theta: % .5f\r\nyaw/psi: % .5f\r\n\r\n", deg(phi), deg(theta), deg(psi));
 
     Matrix3d R{{-sin(phi) * sin(psi) + cos(phi) * cos(psi) * cos(theta),
                 -sin(phi) * cos(psi) - sin(psi) * cos(phi) * cos(theta),
@@ -194,33 +201,48 @@ int main()
                 sin(psi) * sin(theta),
                 cos(theta)}};
 
-    auto oc = O - (globalJointParams.back().d * R.col(2));
+    cout << "Rotation matrix of R:" << endl;
+    print_mat(R);
+
+    Vector3d oc = O - (globalJointParams.back().d * R.col(2));
 
     Coor ikIn;
     ikIn.x = oc(1);
     ikIn.y = oc(2);
     ikIn.z = oc(0);
     tempAngle = JointAngle();
-    IK(ikIn, &tempAngle);
+    IK_Arm(ikIn, &tempAngle);
     FK_out = FK(tempAngle);
     frames = FK_out.second;
 
-    auto H03 = frames[3];
-    auto R03 = H03.block<3, 3>(0, 0);
-    auto R30 = R03.inverse();
-    auto R36 = R30 * R;
+    Matrix4d H03 = frames[3];
+    Matrix3d R03 = H03.block<3, 3>(0, 0);
+    Matrix3d R30 = R03.inverse();
+    Matrix3d R36 = R30 * R;
 
-    auto ct4 = -R36(1, 2);
-    double t5 = acos(ct4);
-
-    tempAngle.theta5 = t5;
-    auto ct5 = R36(1, 0) / sin(t5);
-    tempAngle.theta6 = acos(ct5);
-
-    auto ct3 = R36(0, 2) / sin(t5);
-    tempAngle.theta4 = acos(ct3);
+    tempAngle.theta4 = atan2(R36(2, 2), R36(0, 2));
+    tempAngle.theta5 = atan2(sqrt(1 - pow(R36(1, 2), 2)), -R36(1, 2));
+    tempAngle.theta6 = atan2(-R36(2, 1), R36(2, 0));
 
     printf("IK Out ->          θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3), deg(tempAngle.theta4), deg(tempAngle.theta5), deg(tempAngle.theta6));
     FK_out = FK(tempAngle);
     printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
+
+    cout << "──────────────────────────────────────────────────────────────────────────────────────────────────────────" << endl;
+
+    Coor newIKCoor(367.569, 321.096, -362.296);
+    Orientation newOrientation(phi, theta, psi);
+    JointAngle IKOut;
+    bool fullIK_out = IK(newIKCoor, newOrientation, &IKOut);
+
+    printf("IK Out ->          θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f\r\n", deg(IKOut.theta1), deg(IKOut.theta2), deg(IKOut.theta3), deg(IKOut.theta4), deg(IKOut.theta5), deg(IKOut.theta6));
+    FK_out = FK(IKOut);
+    printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
+
+    if (!fullIK_out)
+        cout << "You shall not pass!" << endl
+             << endl;
+    else
+        cout << "Proceed!" << endl
+             << endl;
 }

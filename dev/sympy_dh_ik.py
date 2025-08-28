@@ -43,10 +43,10 @@ def extract_rot(frame: MutableDenseMatrix) -> MutableDenseMatrix:
 if __name__ == "__main__":
     init_printing()
 
-    d = [d0, d1, d2, d3, d4, d5] = symbols("d:6", real=True)
-    t = [t0, t1, t2, t3, t4, t5] = symbols("t:6", real=True)
-    a = [a0, a1, a2, a3, a4, a5] = symbols("a:6", real=True)
-    r = [r0, r1, r2, r3, r4, r5] = symbols("r:6", real=True)
+    d = [d0, d1, d2, d3, d4, d5] = symbols("d1:7", real=True)
+    t = [t0, t1, t2, t3, t4, t5] = symbols("t1:7", real=True)
+    a = [a0, a1, a2, a3, a4, a5] = symbols("a1:7", real=True)
+    r = [r0, r1, r2, r3, r4, r5] = symbols("r1:7", real=True)
 
     a_values = {a0: 0, a1: rad(90), a2: 0, a3: rad(90), a4: -rad(90), a5: rad(90)}
     r_values = {r0: 0, r1: 0, r2: 250.201, r3: 0, r4: 0, r5: 0}

@@ -177,7 +177,26 @@ struct IKSoutionSet
         JointAngle elbowDown;
     };
 
+    struct Wrist
+    {
+        double theta1{};
+        double theta2{};
+        double theta3{};
+    };
+
     LeftArm leftArm;
     RightArm rightArm;
-    pair<JointAngle, JointAngle> wrist;
+    Wrist wrist;
+};
+
+struct Orientation
+{
+    double phi{};
+    double theta{};
+    double psi{};
+
+    Orientation() = default;
+    Orientation(double phi, double theta, double psi) : phi(phi),
+                                                        theta(theta),
+                                                        psi(psi) {}
 };
