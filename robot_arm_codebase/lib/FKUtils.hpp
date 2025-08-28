@@ -34,6 +34,10 @@ Matrix4d createDHMatrix(double theta, DHParams dhparams)
 
 Matrix3d createRotationMatrix(Orientation orientation)
 {
+  /*
+    Chapter 2.5.1:
+    Spong, M. W., Hutchinson, S., & Vidyasagar, M. (2020). Robot modeling and control (Second edition.). John Wiley & Sons, Inc.
+  */
   double phi = orientation.phi;
   double theta = orientation.theta;
   double psi = orientation.psi;

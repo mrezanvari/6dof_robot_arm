@@ -140,17 +140,27 @@ struct DHParams
         Spong, M. W., Hutchinson, S., & Vidyasagar, M. (2020). Robot modeling and control (Second edition.). John Wiley & Sons, Inc.
         https://en.wikipedia.org/wiki/Denavit%E2%80%93Hartenberg_parameters
     */
+
+    struct AngleLimit
+    {
+        double min{0};
+        double max{0};
+
+        AngleLimit() = default;
+        AngleLimit(double min, double max) : min(min), max(max) {}
+    };
+
     double d{};
     double a{};
     double alpha{};
     double theta_offset{};
     bool isModifiedDH = true; // -> by default it is modified DH
-    pair<double, double> limits{numeric_limits<double>::quiet_NaN(), numeric_limits<double>::quiet_NaN()};
+    AngleLimit limits;
 
     DHParams() = default;
     DHParams(double d, double a, double alpha,
              double theta_offset,
-             pair<double, double> limits = {numeric_limits<double>::quiet_NaN(), numeric_limits<double>::quiet_NaN()},
+             AngleLimit limits = {0, 0},
              bool isModifiedDH = true) : d(d),
                                          a(a),
                                          alpha(alpha),
