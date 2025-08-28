@@ -100,16 +100,19 @@ void checkSerial()
     currentSystemState = HOMING;
 
   else if (cmd[0].equalsIgnoreCase("ik"))
-    currentSystemState = MOVING;
+    currentSystemState = INVERSE_KINEMATICS;
 
   else if (cmd[0].equalsIgnoreCase("fk"))
-    currentSystemState = HOLDING;
+    currentSystemState = FORWARD_KINEMATICS;
+
+  else if (cmd[0].equalsIgnoreCase("ic"))
+    currentSystemState = IMPEDANCE_CONTROL;
 
   else if (cmd[0].equalsIgnoreCase("idle"))
     currentSystemState = IDLE;
 
   else if (cmd[0].equalsIgnoreCase("probe"))
-    currentSystemState = DIFF;
+    currentSystemState = PROBE;
 
   else if (cmd[0].equalsIgnoreCase("dev"))
     currentSystemState = DEV;
@@ -130,22 +133,53 @@ void checkSerial()
 
     else if (cmd[1].equalsIgnoreCase("pos"))
     {
-      if (cmdSize != 5)
+      if (cmdSize != 5 && cmdSize != 8)
       {
         Serial.println("Command Error!  use \"help\"");
         return;
       }
       // userGlobalPos = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
 
-      tempPos.x = cmd[2].equalsIgnoreCase("nan") ? tempPos.x : cmd[2].toFloat();
-      tempPos.y = cmd[3].equalsIgnoreCase("nan") ? tempPos.y : cmd[3].toFloat();
-      tempPos.z = cmd[4].equalsIgnoreCase("nan") ? tempPos.z : cmd[4].toFloat();
+      tempPos.x = cmd[2].equalsIgnoreCase("nan") ? tempPos.x : cmd[2].toDouble();
+      tempPos.y = cmd[3].equalsIgnoreCase("nan") ? tempPos.y : cmd[3].toDouble();
+      tempPos.z = cmd[4].equalsIgnoreCase("nan") ? tempPos.z : cmd[4].toDouble();
+
+      if (cmdSize == 8)
+      {
+        tempOrientation.phi = cmd[5].equalsIgnoreCase("nan") ? tempOrientation.phi : rad(cmd[5].toDouble());
+        tempOrientation.theta = cmd[6].equalsIgnoreCase("nan") ? tempOrientation.theta : rad(cmd[6].toDouble());
+        tempOrientation.psi = cmd[7].equalsIgnoreCase("nan") ? tempOrientation.psi : rad(cmd[7].toDouble());
+      }
 
       globalTraceCoor.x = 0;
       globalTraceCoor.y = 0;
       globalTraceCoor.z = 0;
 
-      Serial.printf("Set pos to x:%2f y:%2f z:%2f\r\n", tempPos.x, tempPos.y, tempPos.z);
+      globalTraceOrientation.phi = globalTraceOrientation.psi = globalTraceOrientation.theta = 0;
+
+      Serial.printf("Set pos to x:%.2f y:%.2f z:%.2f and orientation to phi:%.2f theta:%.2f psi:%.2f\r\n", tempPos.x, tempPos.y, tempPos.z, tempOrientation.phi, tempOrientation.theta, tempOrientation.psi);
+    }
+
+    else if (cmd[1].equalsIgnoreCase("trace"))
+    {
+      if (cmdSize != 5 && cmdSize != 8)
+      {
+        Serial.println("Command Error!  use \"help\"");
+        return;
+      }
+
+      globalTraceCoor.x = cmd[2].toDouble();
+      globalTraceCoor.y = cmd[3].toDouble();
+      globalTraceCoor.z = cmd[4].toDouble();
+
+      if (cmdSize == 8)
+      {
+        globalTraceOrientation.phi = cmd[5].equalsIgnoreCase("nan") ? globalTraceOrientation.phi : rad(cmd[5].toDouble());
+        globalTraceOrientation.theta = cmd[6].equalsIgnoreCase("nan") ? globalTraceOrientation.theta : rad(cmd[6].toDouble());
+        globalTraceOrientation.psi = cmd[7].equalsIgnoreCase("nan") ? globalTraceOrientation.psi : rad(cmd[7].toDouble());
+      }
+
+      Serial.printf("Set trace to x:%.2f y:%.2f z:%.2f and orientation to phi:%.2f theta:%.2f psi:%.2f\r\n", tempPos.x, tempPos.y, tempPos.z, tempOrientation.phi, tempOrientation.theta, tempOrientation.psi);
     }
 
     else if (cmd[1].equalsIgnoreCase("ang"))
@@ -225,22 +259,6 @@ void checkSerial()
       Serial.println("Arm and Wrist zeroed");
 
       return;
-    }
-
-    else if (cmd[1].equalsIgnoreCase("trace"))
-    {
-      if (cmdSize != 5)
-      {
-        Serial.println("Command Error!  use \"help\"");
-        return;
-      }
-      // userGlobalPos = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
-
-      globalTraceCoor.x = cmd[2].toFloat();
-      globalTraceCoor.y = cmd[3].toFloat();
-      globalTraceCoor.z = cmd[4].toFloat();
-
-      Serial.printf("Set trace to x:%2f y:%2f z:%2f\r\n", globalTraceCoor.x, globalTraceCoor.y, globalTraceCoor.z);
     }
 
     else if (cmd[1].equalsIgnoreCase("interval"))

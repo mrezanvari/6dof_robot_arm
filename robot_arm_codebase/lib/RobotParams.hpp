@@ -40,7 +40,7 @@ const vector<DHParams> globalJointParams =
             -rad(90),
             0.0),
         DHParams(
-            140.54,
+            156.927, // center of joint to center of ball
             0,
             rad(90),
             0.0),
@@ -80,7 +80,7 @@ const vector<DHParams> preciseJointParams =
             -rad(90),
             0.0),
         DHParams(
-            140.54,
+            156.927,
             0,
             rad(90),
             0.0),
