@@ -77,8 +77,10 @@ void run_homing()
     initMotors();
     // baseJointMotor.SetBrake();
     lowerJointMotor.SetBrake();
-    Serial.println("Homing...");
-    Serial.println("Please move the lower joint to upwards position and make sure the arm can move freely, then press the button.");
+    upperJointMotor.SetBrake();
+    wristLowerJointMotor.SetBrake();
+    Serial.println(F("Homing..."));
+    Serial.println(F("Please move the lower joint to upwards position and make sure the arm can move freely, then press the button."));
     probeCount = 0;
     probVal = 0.0;
     while (usrKey_up)
@@ -87,21 +89,36 @@ void run_homing()
       delay(1);
     }
 
-    Serial.println("Probing begins once the button is release, be careful!");
+    Serial.println(F("Probing begins once the button is release, be careful!"));
 
     while (usrKey_down)
     {
       rgbLedWrite(RGB_BUILTIN, 50, 50, 0);
       delay(1);
     }
+    baseJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+    lowerJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+    upperJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+    wristBaseJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+    wristLowerJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+    wristUpperJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+    delay(10);
+    baseJointMotor.SetStop();
+    lowerJointMotor.SetStop();
+    upperJointMotor.SetStop();
+    wristBaseJointMotor.SetStop();
+    wristLowerJointMotor.SetStop();
+    wristUpperJointMotor.SetStop();
+    delay(10);
+    brakeAllMotors();
     currentHomingState = PROBING_UPPER_JOINT_LIMIT;
-    motor_cmd[2].position = upperJointMotor.last_result().values.position;
-    Serial.println("Probing upper joint...");
+    // motor_cmd[2].position = upperJointMotor.last_result().values.position;
+    Serial.println(F("Probing upper joint..."));
     break;
   case PROBING_UPPER_JOINT_LIMIT:
     rgbLedWrite(RGB_BUILTIN, 0, 20, 20);
-
-    motor_cmd[2].velocity = probeCount <= 0 ? 0.6 : 0.1;
+    lockMotor(lowerJointMotor);
+    motor_cmd[2].velocity = probeCount <= 0 ? -0.6 : -0.1;
     motor_cmd[2].accel_limit = probeCount <= 0 ? 3.0 : 1.0;
     motor_cmd[2].velocity_limit = 3.0;
     motor_cmd[2].position = NaN;
@@ -110,43 +127,49 @@ void run_homing()
     if (upperJointAtLimit && probeCount < probeLimit)
     {
       upperJointMotor.SetBrake();
-      Serial.print("Hit limit at position: ");
+      Serial.print(F("Hit limit at position: "));
       probVal = upperJointMotor.last_result().values.position;
       Serial.println(probVal);
+      motor_cmd[2] = Moteus::PositionMode::Command();
       motor_cmd[2].velocity = NaN;
       motor_cmd[2].accel_limit = 3.0;
-      motor_cmd[2].position = (probVal - 0.3);
-      upperJointMotor.SetPositionWaitComplete(motor_cmd[2], 0.02, &motor_position_fmt);
+      motor_cmd[2].position = (probVal + 0.3);
+      upperJointMotor.SetPositionWaitComplete(motor_cmd[2], 0.01, &motor_position_fmt);
       probeCount++;
     }
 
     else if (upperJointAtLimit && probeCount >= probeLimit)
     {
-      upperJointMotor.SetBrake(); // use d pos nan 0 nan
-      delay(50);
-      Serial.println("Probing upper joint complete!");
-      Serial.print("Hit limit at position: ");
+      lockMotor(upperJointMotor, false);
+      delay(10);
+      Serial.println(F("Probing upper joint complete!"));
+      Serial.print(F("Hit limit at position: "));
       Serial.println(upperJointMotor.last_result().values.position);
       Serial.println("Homing upper joint...");
+      delay(5);
       mjbots::moteus::RequireReindex::Command rrcmd;
       upperJointMotor.SetRequireReindex(rrcmd);
       String command = "d exact " + String(upperJointHome);
       upperJointMotor.DiagnosticCommand(command);
+      upperJointMotor.SetBrake();
+      delay(5);
       motor_cmd[2].velocity = NaN;
       motor_cmd[2].velocity_limit = 4.0;
-      motor_cmd[2].position = -2.25;
+      motor_cmd[2].position = mot_a(180);
       upperJointMotor.SetPositionWaitComplete(motor_cmd[2], 0.02, &motor_position_fmt);
       upperJointMotor.SetBrake();
-      Serial.print("This pos is: ");
+      Serial.print(F("This pos is: "));
       Serial.println(upperJointMotor.last_result().values.position);
       currentHomingState = PROBING_LOWER_JOINT_LIMIT;
+      lockMotor(upperJointMotor);
+      lowerJointMotor.SetBrake();
       probeCount = 0;
     }
     break;
   case PROBING_LOWER_JOINT_LIMIT:
 
     rgbLedWrite(RGB_BUILTIN, 20, 0, 20);
-    motor_cmd[1].velocity = probeCount <= 0 ? 0.6 : 0.1;
+    motor_cmd[1].velocity = probeCount <= 0 ? -0.6 : -0.1;
     motor_cmd[1].accel_limit = probeCount <= 0 ? 3.0 : 1.0;
     motor_cmd[1].velocity_limit = 3.0;
     motor_cmd[1].position = NaN;
@@ -154,71 +177,75 @@ void run_homing()
 
     if (lowerJointAtLimit && probeCount < probeLimit)
     {
-      lowerJointMotor.SetBrake();
-      Serial.print("Hit limit at position: ");
+      lockMotor(lowerJointMotor, false);
+      Serial.print(F("Hit limit at position: "));
       probVal = lowerJointMotor.last_result().values.position;
       Serial.println(probVal);
-      Serial.println("Homing lower joint...");
+      Serial.println(F("Homing lower joint..."));
       motor_cmd[1] = Moteus::PositionMode::Command();
       motor_cmd[1].velocity = NaN;
       motor_cmd[1].velocity_limit = 1.0;
       motor_cmd[1].accel_limit = 3.0;
-      motor_cmd[1].position = (probVal - 0.3);
+      motor_cmd[1].position = (probVal + 0.3);
+      Serial.print(F("Going back to:"));
+      Serial.println(motor_cmd[1].position);
       lowerJointMotor.SetPositionWaitComplete(motor_cmd[1], 0.02, &motor_position_fmt);
       probeCount++;
     }
     else if (lowerJointAtLimit && probeCount >= probeLimit)
     {
-      lowerJointMotor.SetBrake();
+      lockMotor(lowerJointMotor, false);
       delay(50);
-      Serial.println("Probing lower joint complete!");
-      Serial.print("Hit limit at position: ");
+      Serial.println(F("Probing lower joint complete!"));
+      Serial.print(F("Hit limit at position: "));
       Serial.println(lowerJointMotor.last_result().values.position);
-      Serial.println("Homing lower joint...");
+      Serial.println(F("Homing lower joint..."));
+      delay(2);
       mjbots::moteus::RequireReindex::Command rrcmd;
       lowerJointMotor.SetRequireReindex(rrcmd);
       String command = "d exact " + String(lowerJointHome);
       lowerJointMotor.DiagnosticCommand(command);
+      lowerJointMotor.SetBrake();
+      delay(5);
       motor_cmd[1] = Moteus::PositionMode::Command();
       motor_cmd[1].velocity = NaN;
-      motor_cmd[1].position = lowerJointMax / 2;
+      motor_cmd[1].position = mot_a(90);
       motor_cmd[1].accel_limit = 1.0;
 
       motor_cmd[2] = Moteus::PositionMode::Command();
       motor_cmd[2].velocity = NaN;
-      motor_cmd[2].position = 0;
+      motor_cmd[2].position = mot_a(90);
       motor_cmd[2].accel_limit = 3.0;
+      Serial.print(F("Going to:"));
+      Serial.println(motor_cmd[1].position);
       lowerJointMotor.SetPositionWaitComplete(motor_cmd[1], 0.02, &motor_position_fmt);
-      lowerJointMotor.SetBrake();
+      lockMotor(lowerJointMotor);
 
-      upperJointMotor.SetPositionWaitComplete(motor_cmd[2], 0.02, &motor_position_fmt);
       upperJointMotor.SetBrake();
+      Serial.print(F("Going to:"));
+      Serial.println(motor_cmd[2].position);
+      upperJointMotor.SetPositionWaitComplete(motor_cmd[2], 0.02, &motor_position_fmt);
+      lockMotor(upperJointMotor);
       probeCount = 0;
-      Serial.println("\r\nPlease rotate the base clockwise until the center point matches the far right position.");
-      Serial.println("Additionally, make sure to put the wrist joints at their corresponding home position.");
-      Serial.println("Once in the correct position, press the key.");
+      Serial.println(F("\r\nPlease rotate the base clockwise until the center point matches the far right position."));
+      Serial.println(F("Additionally, straighten joint 5 so its pointing up. Finally, rotate joint 4 so the hexagonal"));
+      Serial.println(F("logo aligns with the blue logo behind the joint 3"));
+      Serial.println(F("Once in the correct position, press the key."));
       currentHomingState = HOMING_BASE;
     }
     break;
   case HOMING_BASE:
-    motor_cmd[1] = Moteus::PositionMode::Command();
-    motor_cmd[1].velocity = NaN;
-    motor_cmd[1].position = lowerJointMax / 2;
-    ;
-    motor_cmd[1].maximum_torque = NaN;
-
-    motor_cmd[2] = Moteus::PositionMode::Command();
-    motor_cmd[2].velocity = NaN;
-    motor_cmd[2].position = 0;
-    motor_cmd[2].maximum_torque = NaN;
-    lowerJointMotor.SetPosition(motor_cmd[1]);
-    upperJointMotor.SetPosition(motor_cmd[2]);
+    lockMotor(lowerJointMotor);
+    lockMotor(upperJointMotor);
 
     baseJointMotor.SetStop();
+    wristBaseJointMotor.SetStop();
+    wristLowerJointMotor.SetStop();
+    wristUpperJointMotor.SetStop();
 
     if (usrKey_down)
     {
-      Serial.println("The base will begin moving when you let go, be careful!");
+      Serial.println(F("The base will begin moving when you let go, be careful!"));
       while (usrKey_down)
       {
         rgbLedWrite(RGB_BUILTIN, 50, 50, 0);
@@ -226,17 +253,27 @@ void run_homing()
       }
 
       probeCount++;
+      // baseJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+      // wristBaseJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+      // wristLowerJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+      // wristUpperJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+      // delay(5);
       mjbots::moteus::RequireReindex::Command rrcmd;
       baseJointMotor.SetRequireReindex(rrcmd);
       String command = "d exact " + String(baseJointHome);
       baseJointMotor.DiagnosticCommand(command);
-      command = "d exact 0";
+      command = F("d exact 0");
       wristBaseJointMotor.SetRequireReindex(rrcmd);
       wristBaseJointMotor.DiagnosticCommand(command);
       wristLowerJointMotor.SetRequireReindex(rrcmd);
       wristLowerJointMotor.DiagnosticCommand(command);
       wristUpperJointMotor.SetRequireReindex(rrcmd);
       wristUpperJointMotor.DiagnosticCommand(command);
+      delay(5);
+      baseJointMotor.SetStop();
+      wristBaseJointMotor.SetStop();
+      wristLowerJointMotor.SetStop();
+      wristUpperJointMotor.SetStop();
       delay(1100);
     }
 
@@ -245,10 +282,8 @@ void run_homing()
       motor_cmd[0] = Moteus::PositionMode::Command();
       motor_cmd[0].accel_limit = 3.0;
       motor_cmd[0].velocity = NaN;
-      motor_cmd[0].position = baseJointMax / 2;
+      motor_cmd[0].position = mot_a(90);
       baseJointMotor.SetPositionWaitComplete(motor_cmd[0], 0.02, &motor_position_fmt);
-      baseJointMotor.SetBrake();
-
       baseJointMotor.SetStop();
       lowerJointMotor.SetStop();
       upperJointMotor.SetStop();
@@ -257,13 +292,11 @@ void run_homing()
 
     break;
   case END_HOMING:
-    Serial.println("Homing Complete!");
+    Serial.println(F("Homing Complete!"));
     isHomed = true;
     currentSystemState = IDLE;
     currentHomingState = BEGIN_HOMING;
-    baseJointMotor.SetBrake();
-    lowerJointMotor.SetBrake();
-    upperJointMotor.SetBrake();
+    // Perhaps move to a safe position and end homing there?
     break;
   default:
     NOT_IMPLEMENTED();
@@ -662,7 +695,7 @@ void system_run()
 
     if (usrKey_down)
     {
-      Serial.println("Release key to set origin.");
+      Serial.println(F("Release key to set origin."));
       rgbLedWrite(RGB_BUILTIN, 0, 0, 100);
       while (usrKey_down)
         ;
