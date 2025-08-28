@@ -547,6 +547,11 @@ void system_run()
     devOrientation.theta += rad((moveDir * 0.1));
     // devOrientation.phi += rad((-moveDir * 0.1));
 
+    // TODO: Make the ball rotate around itself -> this would be a starting point:
+    // double thet = constrain(rad(30) + sin(millis() * 0.0001), rad(30), rad(100));
+    // double ph = constrain(rad(90) + cos(millis() * 0.0001), rad(90), rad(180));
+    // printf("theta:% .5f phi:% .5f t2:% .5f p2:% .5f\r\n", deg(thet), deg(ph), deg(devOrientation.theta), deg(devOrientation.phi));
+
     if (devOrientation.theta >= rad(110))
       moveDir = -1;
     else if (devOrientation.theta <= rad(30))
