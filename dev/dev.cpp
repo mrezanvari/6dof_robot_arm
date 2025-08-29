@@ -11,14 +11,6 @@ JointAngle tempAngle;
 using namespace Eigen;
 using Eigen::MatrixXd;
 
-double thresh = 1e-5;
-vector<double> globalEndEffectorOrientation = {0, 0, 0};
-
-Orientation devOrientation(
-    rad(140),
-    rad(50),
-    0);
-
 template <typename Derived>
 void print_mat(const MatrixBase<Derived> &mat, bool newline = true, string formatstr = "  % 16.10G│")
 {
@@ -35,8 +27,32 @@ void print_mat(const MatrixBase<Derived> &mat, bool newline = true, string forma
         cout << endl;
 }
 
+void drawSectionLine(string sectionTitle = "")
+{
+    const char *sectionLine = "─";
+    const size_t sectionLineLength = 161;
+    if (sectionTitle != "")
+        sectionTitle = "« " + sectionTitle + " »";
+    const size_t sectionTitleSize = sectionTitle.size();
+
+    cout << endl;
+    for (int i = 0; i < sectionLineLength; ++i)
+    {
+        if (i == (floor(sectionLineLength / 2) - floor(sectionTitleSize / 2)))
+        {
+            cout << sectionTitle;
+            i += sectionTitleSize;
+        }
+        else
+            cout << sectionLine;
+    }
+    cout << endl
+         << endl;
+}
+
 int main()
 {
+    drawSectionLine("3 DoF IK"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
     globalUserPos.x = 280;
     globalUserPos.y = 100;
     globalUserPos.z = -200;
@@ -55,7 +71,7 @@ int main()
         cout << "Proceed!" << endl
              << endl;
 
-    cout << "──────────────────────────────────────────────────────────────────────────────────────────────────────────" << endl;
+    drawSectionLine("FK and Jacobian Basics"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     JointAngle testAngle = {
         rad(0),
@@ -90,6 +106,7 @@ int main()
     FK_coor = FK_precise(testAngle);
     printf("Fast FK Coor-> x= %.3f y= %.3f z= %.3f\r\n", FK_coor.x, FK_coor.y, FK_coor.z);
 
+    // const double thresh = 1e-5;
     // for (int i = 0; i < 6; i++)
     // {
     //     Vector3d zi = frames[i].block<3, 1>(0, 2);
@@ -137,20 +154,19 @@ int main()
                 1}}; // angular vz
 
     VectorXd velocities(6);
-    // velocities = getJointVelocities(J, v);
-    // velocities /= 2 * M_PI; // devide by 2*M_PI for rev/sec
-    // velocities *= 8;
+    velocities = getJointVelocities(J, v);
+    velocities /= 2 * M_PI; // devide by 2*M_PI for rev/sec
+    velocities *= 8;
 
     print_mat(velocities, true, " % .15f");
-    printf("JVel v1:% .10f v2:% .10f v3:% .10f \r\n",
-           velocities(0),
-           velocities(1),
-           velocities(2));
 
-    cout << "──────────────────────────────────────────────────────────────────────────────────────────────────────────" << endl;
-    // x:-60.632 y: 298.841 z: 76.994 │ θ1: 125.613 θ2: 28.179 θ3: 3.495 θ4: 295.900 θ5: -99.404 θ6: 5454.419 de
-    // x:-54.067 y: 327.222 z: 60.034 │ θ1: 117.850 θ2: 30.726 θ3: -29.172 θ4: 48.462 θ5: 87.102 θ6: 35527.159 deg
-    // x:-352.765 y: 357.883 z: 311.934 │ θ1: 134.600 θ2: 43.610 θ3: 18.829 θ4: 0.052 θ5: 61.537 θ6: 62546.078 deg | ∞: 0 │ rank: 6 | J11 det:  30450268.80186589 J22 det: 0.87912648256265846225
+    printf("Jacobian Velocites:\r\n");
+    for (int i = 0; i < velocities.size(); ++i)
+        printf("v%d:% .10f\t", i, velocities(i));
+
+    cout << endl;
+    drawSectionLine("6 DoF IK Dev"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
     testAngle = {
         rad(134.600),
         rad(43.610),
@@ -228,7 +244,7 @@ int main()
     FK_out = FK(tempAngle);
     printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
 
-    cout << "──────────────────────────────────────────────────────────────────────────────────────────────────────────" << endl;
+    drawSectionLine("Full IK Test"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     Coor newIKCoor(367.569, 321.096, -362.296);
     Orientation newOrientation(phi, theta, psi);
