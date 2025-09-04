@@ -261,4 +261,94 @@ int main()
     else
         cout << "Proceed!" << endl
              << endl;
+
+    drawSectionLine("3 DoF IK with offset following textbook"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+    globalUserPos.x = 300;
+    globalUserPos.y = 450;
+    globalUserPos.z = -200;
+
+    // xyz = yzx
+    // code - book
+    // return pair(Coor(position(1), position(2), position(0)), frames);
+
+    Coor newpos = globalUserPos; // just to keep the names consistent
+    tempAngle = JointAngle();
+
+    printf("Coor  ->         x= %1.2f y= %1.2f z= %1.2f\r\n", globalUserPos.x, globalUserPos.y, globalUserPos.z);
+    mayProceed = IK_Arm(globalUserPos, &tempAngle);
+
+    tempPos = tempAngle.toMotorPosition();
+    printf("IK Out ->          θ1=%1.3f θ2=%1.3f θ3=%1.3f\r\n\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
+
+    tempAngle.theta1 = tempAngle.theta2 = tempAngle.theta3 = 0;
+
+    double a1 = globalJointParams[0].d; // length of lower arm -> book uses DH, we use MDH so here we use d rather than a
+    double a2 = globalJointParams[2].a; // length of lower arm
+    double a3 = globalJointParams[3].d; // length of upper arm
+    double d = globalJointParams[1].d;  // shoulder offset -> from the second joint DH d parameter
+
+    phi = atan2(newpos.x, newpos.z);
+    double r2 = pow(newpos.x, 2) + pow(newpos.z, 2) - pow(d, 2); // r squared -> from equasion 5.24 and 5.26
+    double s = (newpos.y - a1);                                  // from equasion 5.24 and 5.26
+    double alpha_right = atan2(d, sqrt(r2));
+    double alpha_left = atan2(-d, -sqrt(r2));
+    double theta1_right = phi - alpha_right; // right arm -> for us
+    double theta1_left = phi + alpha_left;   // left arm
+
+    double D = (r2 + pow(s, 2) - pow(a2, 2) - pow(a3, 2)) / (2 * a2 * a3); // from equasion 5.24
+
+    // NOTE: Our quadrants are different from the book
+    double theta3_elbow_up = atan2(D, sqrt(1 - pow(D, 2)));
+    double theta3_elbow_down = atan2(D, -sqrt(1 - pow(D, 2)));
+
+    double theta2_elbow_up = atan2(s, sqrt(r2)) + atan2(a3 * cos(theta3_elbow_up), a2 + (a3 * sin(theta3_elbow_up)));
+    double theta2_elbow_down = atan2(s, sqrt(r2)) + atan2(a3 * cos(theta3_elbow_down), a2 + (a3 * sin(theta3_elbow_down)));
+
+    tempAngle.theta1 = theta1_right;
+    tempAngle.theta2 = theta2_elbow_up;
+    tempAngle.theta3 = theta3_elbow_up;
+
+    printf("new IK right up Out ->      θ1=%1.3f θ2=%1.3f θ3=%1.3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
+
+    tempAngle.theta1 = theta1_right;
+    tempAngle.theta2 = theta2_elbow_down;
+    tempAngle.theta3 = theta3_elbow_down;
+
+    printf("new IK right down Out ->    θ1=%1.3f θ2=%1.3f θ3=%1.3f\r\n\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
+
+    tempAngle.theta1 = theta1_left;
+    tempAngle.theta2 = M_PI / 2 + theta2_elbow_up;
+    tempAngle.theta3 = M_PI + theta3_elbow_up;
+
+    printf("new IK left up Out ->       θ1=%1.3f θ2=%1.3f θ3=%1.3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
+
+    tempAngle.theta1 = theta1_left;
+    tempAngle.theta2 = M_PI / 2 + theta2_elbow_down;
+    tempAngle.theta3 = M_PI + theta3_elbow_down;
+
+    printf("new IK left down Out ->     θ1=%1.3f θ2=%1.3f θ3=%1.3f\r\n\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
+
+    IKSolution iksol;
+    ArmSolution newSolution;
+
+    newSolution.elbow.down.theta1 = newSolution.elbow.up.theta1 = 1.99;
+    newSolution.elbow.down.theta2 = 1.23;
+    newSolution.elbow.down.theta3 = 1.234;
+    newSolution.elbow.down.wrists.first.theta2 = 23.45;
+
+    newSolution.elbow.up.theta2 = 1.2321;
+    newSolution.elbow.up.theta3 = 1.234321;
+    newSolution.elbow.up.wrists.first.theta3 = 23.45;
+
+    iksol.left = newSolution;
+
+    cout << "Elbow Down:" << endl;
+    for (int i = 0; i < 9; ++i)
+        printf("thet%d:% .7f ", i + 1, newSolution.elbow.down.thetas[i]);
+
+    cout << endl;
+    cout << "Elbow up:" << endl;
+    for (int i = 0; i < 9; ++i)
+        printf("thet%d:% .7f ", i + 1, newSolution.elbow.up.thetas[i]);
+    cout << endl;
 }
