@@ -113,22 +113,26 @@ void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHP
   double theta3_elbow_down = atan2(D, -sqrt(1 - pow(D, 2)));
   double theta2_elbow_down = atan2(s, sqrt(r2)) + atan2(a3 * cos(theta3_elbow_down), a2 + (a3 * sin(theta3_elbow_down)));
 
-  newIKSolution->right.elbow.up.theta1 = theta1_right;
-  newIKSolution->right.elbow.up.theta2 = theta2_elbow_up;
-  newIKSolution->right.elbow.up.theta3 = theta3_elbow_up;
+  newIKSolution->right.up.theta1 = theta1_right;
+  newIKSolution->right.up.theta2 = theta2_elbow_up;
+  newIKSolution->right.up.theta3 = theta3_elbow_up;
 
-  newIKSolution->right.elbow.down.theta1 = theta1_right;
-  newIKSolution->right.elbow.down.theta2 = theta2_elbow_down;
-  newIKSolution->right.elbow.down.theta3 = theta3_elbow_down;
+  newIKSolution->right.down.theta1 = theta1_right;
+  newIKSolution->right.down.theta2 = theta2_elbow_down;
+  newIKSolution->right.down.theta3 = theta3_elbow_down;
 
   // TODO: Must be asked, are theta 2 and 3 for both left and right solutions the same just opposite?
-  newIKSolution->left.elbow.up.theta1 = theta1_left;
-  newIKSolution->left.elbow.up.theta2 = M_PI / 2 + theta2_elbow_up;
-  newIKSolution->left.elbow.up.theta3 = M_PI + theta3_elbow_up;
+  newIKSolution->left.up.theta1 = theta1_left;
+  newIKSolution->left.up.theta2 = M_PI / 2 + theta2_elbow_up;
+  newIKSolution->left.up.theta3 = M_PI + theta3_elbow_up;
 
-  newIKSolution->left.elbow.down.theta1 = theta1_left;
-  newIKSolution->left.elbow.down.theta2 = M_PI / 2 + theta2_elbow_down;
-  newIKSolution->left.elbow.down.theta3 = M_PI + theta3_elbow_down;
+  newIKSolution->left.down.theta1 = theta1_left;
+  newIKSolution->left.down.theta2 = M_PI / 2 + theta2_elbow_down;
+  newIKSolution->left.down.theta3 = M_PI + theta3_elbow_down;
+}
+
+void solveWristIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHParams> &jointParams = globalJointParams)
+{
 }
 
 bool IK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAngle, const vector<DHParams> &jointParams = globalJointParams)

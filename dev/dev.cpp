@@ -326,14 +326,37 @@ int main()
     tempAngle.theta2 = M_PI / 2 + theta2_elbow_down;
     tempAngle.theta3 = M_PI + theta3_elbow_down;
 
-    printf("new IK left down Out ->     θ1=% .3f θ2=% .3f θ3=% .3f\r\n\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
+    printf("new IK left down Out ->     θ1=% .3f θ2=% .3f θ3=% .3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
 
+    cout << "────────────────" << endl;
     IKSolution iksol;
     solve3DoFIK(newpos, &iksol);
 
-    printf("new IK right up Out ->      θ1=% .3f θ2=% .3f θ3=% .3f\r\n", deg(iksol.right.elbow.up.theta1), deg(iksol.right.elbow.up.theta2), deg(iksol.right.elbow.up.theta3));
-    printf("new IK right down Out ->    θ1=% .3f θ2=% .3f θ3=% .3f\r\n\r\n", deg(iksol.right.elbow.down.theta1), deg(iksol.right.elbow.down.theta2), deg(iksol.right.elbow.down.theta3));
+    int offset = 0;
+    printf("new IK right up Out ->      ");
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(iksol.thetas[i]));
+    cout << endl;
 
-    printf("new IK left up Out ->       θ1=% .3f θ2=% .3f θ3=% .3f\r\n", deg(iksol.left.elbow.up.theta1), deg(iksol.left.elbow.up.theta2), deg(iksol.left.elbow.up.theta3));
-    printf("new IK left down Out ->     θ1=% .3f θ2=% .3f θ3=% .3f\r\n\r\n", deg(iksol.left.elbow.down.theta1), deg(iksol.left.elbow.down.theta2), deg(iksol.left.elbow.down.theta3));
+    printf("new IK right down Out ->    ");
+    offset = 9;
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(iksol.thetas[i]));
+    cout << endl
+         << endl;
+
+    printf("new IK left up Out ->       ");
+    offset = 18;
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(iksol.thetas[i]));
+    cout << endl;
+
+    printf("new IK left down Out ->     ");
+    offset = 27;
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(iksol.thetas[i]));
+    cout << endl
+         << endl;
+
+    cout << sizeof(IKSolution) / sizeof(double) << endl;
 }

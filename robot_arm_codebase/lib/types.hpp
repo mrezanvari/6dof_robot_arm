@@ -169,46 +169,47 @@ struct DHParams
                                          isModifiedDH(isModifiedDH) {}
 };
 
-struct ArmSolution
-{
-    struct Wrist
-    {
-        double theta1{};
-        double theta2{};
-        double theta3{};
-
-        Wrist() = default;
-    };
-
-    struct ElbowSolution
-    {
-        double theta1{};
-        double theta2{};
-        double theta3{};
-        pair<Wrist, Wrist> wrists = {};
-
-        ElbowSolution() = default;
-    };
-
-    struct
-    {
-        ElbowSolution up;
-        ElbowSolution down;
-
-    } elbow;
-
-    ArmSolution() = default;
-};
-
+#pragma pack(push, 1)
 struct IKSolution
 {
-    ArmSolution right;
-    ArmSolution left;
+    /*
+        This istruct is meant to hold all 8 solutions of the IK
+        2: elbow up/down
+        2: wrsit up/down
+        2: shoulder left/right
 
-    JointAngle candidate;
-
-    IKSolution() = default;
+        all thetas are accessible as a flat array of 36 thetas
+    */
+    struct Wrist
+    {
+        double theta1;
+        double theta2;
+        double theta3;
+    };
+    struct Elbow
+    {
+        double theta1;
+        double theta2;
+        double theta3;
+        Wrist wrist1;
+        Wrist wrist2;
+    };
+    struct Arm
+    {
+        Elbow up;
+        Elbow down;
+    };
+    union
+    {
+        struct
+        {
+            Arm right;
+            Arm left;
+        };
+        double thetas[36];
+    };
 };
+#pragma pack(pop)
 
 struct IKSoutionSet
 {
