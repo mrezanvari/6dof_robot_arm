@@ -308,47 +308,32 @@ int main()
     tempAngle.theta2 = theta2_elbow_up;
     tempAngle.theta3 = theta3_elbow_up;
 
-    printf("new IK right up Out ->      θ1=%1.3f θ2=%1.3f θ3=%1.3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
+    printf("new IK right up Out ->      θ1=% .3f θ2=% .3f θ3=% .3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
 
     tempAngle.theta1 = theta1_right;
     tempAngle.theta2 = theta2_elbow_down;
     tempAngle.theta3 = theta3_elbow_down;
 
-    printf("new IK right down Out ->    θ1=%1.3f θ2=%1.3f θ3=%1.3f\r\n\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
+    printf("new IK right down Out ->    θ1=% .3f θ2=% .3f θ3=% .3f\r\n\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
 
     tempAngle.theta1 = theta1_left;
     tempAngle.theta2 = M_PI / 2 + theta2_elbow_up;
     tempAngle.theta3 = M_PI + theta3_elbow_up;
 
-    printf("new IK left up Out ->       θ1=%1.3f θ2=%1.3f θ3=%1.3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
+    printf("new IK left up Out ->       θ1=% .3f θ2=% .3f θ3=% .3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
 
     tempAngle.theta1 = theta1_left;
     tempAngle.theta2 = M_PI / 2 + theta2_elbow_down;
     tempAngle.theta3 = M_PI + theta3_elbow_down;
 
-    printf("new IK left down Out ->     θ1=%1.3f θ2=%1.3f θ3=%1.3f\r\n\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
+    printf("new IK left down Out ->     θ1=% .3f θ2=% .3f θ3=% .3f\r\n\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
 
     IKSolution iksol;
-    ArmSolution newSolution;
+    solve3DoFIK(newpos, &iksol);
 
-    newSolution.elbow.down.theta1 = newSolution.elbow.up.theta1 = 1.99;
-    newSolution.elbow.down.theta2 = 1.23;
-    newSolution.elbow.down.theta3 = 1.234;
-    newSolution.elbow.down.wrists.first.theta2 = 23.45;
+    printf("new IK right up Out ->      θ1=% .3f θ2=% .3f θ3=% .3f\r\n", deg(iksol.right.elbow.up.theta1), deg(iksol.right.elbow.up.theta2), deg(iksol.right.elbow.up.theta3));
+    printf("new IK right down Out ->    θ1=% .3f θ2=% .3f θ3=% .3f\r\n\r\n", deg(iksol.right.elbow.down.theta1), deg(iksol.right.elbow.down.theta2), deg(iksol.right.elbow.down.theta3));
 
-    newSolution.elbow.up.theta2 = 1.2321;
-    newSolution.elbow.up.theta3 = 1.234321;
-    newSolution.elbow.up.wrists.first.theta3 = 23.45;
-
-    iksol.left = newSolution;
-
-    cout << "Elbow Down:" << endl;
-    for (int i = 0; i < 9; ++i)
-        printf("thet%d:% .7f ", i + 1, newSolution.elbow.down.thetas[i]);
-
-    cout << endl;
-    cout << "Elbow up:" << endl;
-    for (int i = 0; i < 9; ++i)
-        printf("thet%d:% .7f ", i + 1, newSolution.elbow.up.thetas[i]);
-    cout << endl;
+    printf("new IK left up Out ->       θ1=% .3f θ2=% .3f θ3=% .3f\r\n", deg(iksol.left.elbow.up.theta1), deg(iksol.left.elbow.up.theta2), deg(iksol.left.elbow.up.theta3));
+    printf("new IK left down Out ->     θ1=% .3f θ2=% .3f θ3=% .3f\r\n\r\n", deg(iksol.left.elbow.down.theta1), deg(iksol.left.elbow.down.theta2), deg(iksol.left.elbow.down.theta3));
 }

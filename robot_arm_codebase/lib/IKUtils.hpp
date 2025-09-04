@@ -60,7 +60,7 @@ bool validateWristSolution(const Orientation &newOrientation, const IKSoutionSet
   return has_nan && has_out_of_range;
 }
 
-bool IK_Arm(const Coor newpos, JointAngle *newMotorAngle, const vector<DHParams> &jointParams = globalJointParams)
+bool IK_Arm(const Coor &newpos, JointAngle *newMotorAngle, const vector<DHParams> &jointParams = globalJointParams)
 {
   float r1, r2, r3, phi1, phi2, phi3;
 
@@ -88,7 +88,50 @@ bool IK_Arm(const Coor newpos, JointAngle *newMotorAngle, const vector<DHParams>
   return validateArmSolution(newpos, armSolutions, newMotorAngle, jointParams);
 }
 
-bool IK(const Coor newpos, Orientation newOrientation, JointAngle *newMotorAngle, const vector<DHParams> &jointParams = globalJointParams)
+void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHParams> &jointParams = globalJointParams)
+{
+  double a1 = jointParams[0].d; // length of lower arm -> book uses DH, we use MDH so here we use d rather than a
+  double a2 = jointParams[2].a; // length of lower arm
+  double a3 = jointParams[3].d; // length of upper arm
+  double d = jointParams[1].d;  // shoulder offset -> from the second joint DH d parameter
+
+  double phi = atan2(newpos.x, newpos.z);
+  double r2 = pow(newpos.x, 2) + pow(newpos.z, 2) - pow(d, 2);           // r squared -> from equation 5.24 and 5.26
+  double s = (newpos.y - a1);                                            // from equation 5.24 and 5.26
+  double D = (r2 + pow(s, 2) - pow(a2, 2) - pow(a3, 2)) / (2 * a2 * a3); // from equation 5.24
+
+  double alpha_right = atan2(d, sqrt(r2));
+  double alpha_left = atan2(-d, -sqrt(r2));
+
+  double theta1_right = phi - alpha_right; // right arm -> for us
+  double theta1_left = phi + alpha_left;   // left arm
+
+  // NOTE: Our quadrants are different from the book
+  double theta3_elbow_up = atan2(D, sqrt(1 - pow(D, 2)));
+  double theta2_elbow_up = atan2(s, sqrt(r2)) + atan2(a3 * cos(theta3_elbow_up), a2 + (a3 * sin(theta3_elbow_up)));
+
+  double theta3_elbow_down = atan2(D, -sqrt(1 - pow(D, 2)));
+  double theta2_elbow_down = atan2(s, sqrt(r2)) + atan2(a3 * cos(theta3_elbow_down), a2 + (a3 * sin(theta3_elbow_down)));
+
+  newIKSolution->right.elbow.up.theta1 = theta1_right;
+  newIKSolution->right.elbow.up.theta2 = theta2_elbow_up;
+  newIKSolution->right.elbow.up.theta3 = theta3_elbow_up;
+
+  newIKSolution->right.elbow.down.theta1 = theta1_right;
+  newIKSolution->right.elbow.down.theta2 = theta2_elbow_down;
+  newIKSolution->right.elbow.down.theta3 = theta3_elbow_down;
+
+  // TODO: Must be asked, are theta 2 and 3 for both left and right solutions the same just opposite?
+  newIKSolution->left.elbow.up.theta1 = theta1_left;
+  newIKSolution->left.elbow.up.theta2 = M_PI / 2 + theta2_elbow_up;
+  newIKSolution->left.elbow.up.theta3 = M_PI + theta3_elbow_up;
+
+  newIKSolution->left.elbow.down.theta1 = theta1_left;
+  newIKSolution->left.elbow.down.theta2 = M_PI / 2 + theta2_elbow_down;
+  newIKSolution->left.elbow.down.theta3 = M_PI + theta3_elbow_down;
+}
+
+bool IK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAngle, const vector<DHParams> &jointParams = globalJointParams)
 {
   /*
     Chapter 5.2:

@@ -180,32 +180,14 @@ struct ArmSolution
         Wrist() = default;
     };
 
-    union ElbowSolution
+    struct ElbowSolution
     {
-        struct
-        {
-            double theta1;
-            double theta2;
-            double theta3;
-            pair<Wrist, Wrist> wrists = {};
-        };
+        double theta1{};
+        double theta2{};
+        double theta3{};
+        pair<Wrist, Wrist> wrists = {};
 
-        double thetas[9];
-
-        ElbowSolution() { new (&wrists) pair<Wrist, Wrist>(); }
-        ~ElbowSolution() { wrists.~pair(); }
-
-        ElbowSolution(const ElbowSolution &other)
-        {
-            new (&wrists) pair<Wrist, Wrist>(other.wrists);
-        }
-
-        ElbowSolution &operator=(const ElbowSolution &other)
-        {
-            if (this != &other)
-                wrists = other.wrists;
-            return *this;
-        }
+        ElbowSolution() = default;
     };
 
     struct
@@ -222,6 +204,8 @@ struct IKSolution
 {
     ArmSolution right;
     ArmSolution left;
+
+    JointAngle candidate;
 
     IKSolution() = default;
 };
