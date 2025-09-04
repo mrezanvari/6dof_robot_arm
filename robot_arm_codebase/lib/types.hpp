@@ -169,6 +169,63 @@ struct DHParams
                                          isModifiedDH(isModifiedDH) {}
 };
 
+struct ArmSolution
+{
+    struct Wrist
+    {
+        double theta1{};
+        double theta2{};
+        double theta3{};
+
+        Wrist() = default;
+    };
+
+    union ElbowSolution
+    {
+        struct
+        {
+            double theta1;
+            double theta2;
+            double theta3;
+            pair<Wrist, Wrist> wrists = {};
+        };
+
+        double thetas[9];
+
+        ElbowSolution() { new (&wrists) pair<Wrist, Wrist>(); }
+        ~ElbowSolution() { wrists.~pair(); }
+
+        ElbowSolution(const ElbowSolution &other)
+        {
+            new (&wrists) pair<Wrist, Wrist>(other.wrists);
+        }
+
+        ElbowSolution &operator=(const ElbowSolution &other)
+        {
+            if (this != &other)
+                wrists = other.wrists;
+            return *this;
+        }
+    };
+
+    struct
+    {
+        ElbowSolution up;
+        ElbowSolution down;
+
+    } elbow;
+
+    ArmSolution() = default;
+};
+
+struct IKSolution
+{
+    ArmSolution right;
+    ArmSolution left;
+
+    IKSolution() = default;
+};
+
 struct IKSoutionSet
 {
     /*
@@ -196,7 +253,13 @@ struct IKSoutionSet
 
     LeftArm leftArm;
     RightArm rightArm;
-    Wrist wrist;
+    Wrist wrist; // wrist would have a pair of solutions that are 180 opposite of each other.
+    // candidateSolution
+
+    // JointAngle toJointAngle()
+    // {
+    //     // fill candidate solution and return
+    // }
 };
 
 struct Orientation
