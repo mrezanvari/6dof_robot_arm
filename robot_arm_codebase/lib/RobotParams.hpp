@@ -21,7 +21,7 @@ const vector<DHParams> globalJointParams =
             0.0,
             {rad(0), rad(180)}),
         DHParams(
-            0,
+            19.898, // sholder offset denoted as d in the Figure 5.6 of the book
             0,
             rad(90),
             0.0,
