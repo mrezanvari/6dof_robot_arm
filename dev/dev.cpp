@@ -4,6 +4,9 @@
 #include "../robot_arm_codebase/lib/FKUtils.hpp"
 #include "../robot_arm_codebase/lib/JacobianUtils.hpp"
 #include <vector>
+#include <fstream>
+#include <string>
+#include <format>
 
 Coor globalUserPos;
 JointAngle tempAngle;
@@ -87,12 +90,12 @@ int main()
     drawSectionLine("FK and Jacobian Basics"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     JointAngle testAngle = {
-        rad(0),
-        rad(60),
-        rad(0),
-        rad(-70),
-        rad(-120),
-        rad(0)};
+        rad(134.189),
+        rad(1.855),
+        rad(86.254),
+        rad(-1.330),
+        rad(78.959),
+        rad(95.663)};
 
     // JointAngle testAngle(
     // rad(0),
@@ -181,12 +184,12 @@ int main()
     drawSectionLine("6 DoF IK Dev"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     testAngle = {
-        rad(134.600),
-        rad(43.610),
-        rad(18.829),
-        rad(0.052),
-        rad(61.537),
-        rad(0)};
+        rad(134.189),
+        rad(1.855),
+        rad(86.254),
+        rad(-1.330),
+        rad(78.959),
+        rad(95.663)};
 
     printf("\r\nFor                θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f deg\r\n",
            deg(testAngle.theta1),
@@ -214,8 +217,8 @@ int main()
         FK_out.first.z,
     }};
 
-    phi = rad(134.54487);  // 134.54487
-    theta = rad(56.02402); // 56.02402
+    phi = rad(140.000); // 134.54487
+    theta = rad(12);    // 56.02402
     psi = rad(0);
 
     printf("\r\nroll/phi: % .5f\r\npitch/theta: % .5f\r\nyaw/psi: % .5f\r\n\r\n", deg(phi), deg(theta), deg(psi));
@@ -241,6 +244,37 @@ int main()
     ikIn.z = oc(0);
     tempAngle = JointAngle();
     IK_Arm(ikIn, &tempAngle);
+    IKSolution tstSol;
+    solve3DoFIK(ikIn, &tstSol);
+
+    int offsett = 0;
+    printf("new IK right up Out ->      ");
+    for (int i = offsett; i < offsett + 9; ++i)
+        printf("θ%d=% .3f ", i - offsett + 1, deg(tstSol.thetas[i]));
+    cout << endl;
+
+    printf("new IK right down Out ->    ");
+    offsett = 9;
+    for (int i = offsett; i < offsett + 9; ++i)
+        printf("θ%d=% .3f ", i - offsett + 1, deg(tstSol.thetas[i]));
+    cout << endl
+         << endl;
+
+    printf("new IK left up Out ->       ");
+    offsett = 18;
+    for (int i = offsett; i < offsett + 9; ++i)
+        printf("θ%d=% .3f ", i - offsett + 1, deg(tstSol.thetas[i]));
+    cout << endl;
+
+    printf("new IK left down Out ->     ");
+    offsett = 27;
+    for (int i = offsett; i < offsett + 9; ++i)
+        printf("θ%d=% .3f ", i - offsett + 1, deg(tstSol.thetas[i]));
+    cout << endl
+         << endl;
+
+    validate3DoFIKSolutions(&tstSol);
+    printf("Solution validation: %s\r\n", objToBin(&tstSol.validationFlags.bits, 1).c_str());
     FK_out = FK(tempAngle);
     frames = FK_out.second;
 
@@ -414,4 +448,107 @@ int main()
          << endl;
 
     printf("Solution validation: %s\r\n", objToBin(&iksol.validationFlags.bits, 1).c_str());
+
+    drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    cout << "To begin simulation, type 'yes':" << endl;
+    string usrInput;
+    cin >> usrInput;
+    if (!(usrInput == "yes" || usrInput == "y"))
+        return 0;
+
+    printf("\r\n\r\n");
+
+    MotorPosition currentMotorPosition;
+    double globalVelocity = 0.7;
+    Orientation devOrientation(
+        rad(140),
+        rad(50),
+        0);
+    newIKCoor = Coor(
+        367.569,
+        321.096,
+        -362.296);
+
+    int moveDir = 1;
+
+    const int loopUpperBound = 2000;
+    int loopCount = 0;
+    fstream logger;
+    logger.open("sim_log.log", fstream::out);
+
+    string logBuffer;
+    while (++loopCount < loopUpperBound)
+    {
+
+        devOrientation.theta += rad((moveDir * 1));
+        // devOrientation.phi += rad((-moveDir * 0.1));
+
+        // TODO: Make the ball rotate around itself -> this would be a starting point:
+        // double thet = constrain(rad(30) + sin(millis() * 0.0001), rad(30), rad(100));
+        // double ph = constrain(rad(90) + cos(millis() * 0.0001), rad(90), rad(180));
+        // printf("theta:% .5f phi:% .5f t2:% .5f p2:% .5f\r\n", deg(thet), deg(ph), deg(devOrientation.theta), deg(devOrientation.phi));
+
+        if (devOrientation.theta >= rad(180))
+            moveDir = -1;
+        else if (devOrientation.theta <= rad(-90))
+            moveDir = 1;
+
+        // bool fullIK_out = IK(newIKCoor, devOrientation, &IKOut);
+        IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &IKOut);
+        if (isAtSingularity)
+            for (int i = 6; i < 9; ++i)
+                IKOut.thetas[i - 3] = fullIKSolution.thetas[i];
+
+        currentMotorPosition = IKOut.toMotorPosition();
+        FK_out = FK(currentMotorPosition.toJointAngle());
+        FK_coor = FK_out.first;
+        J = createJacobianMatrix(FK_out.second);
+        auto singular_out = IsSingular(J);
+        isAtSingularity = singular_out.first;
+
+        VectorXd v{{1,   // linear vx
+                    1,   // linear vy --> move 1 cm/sec upwards
+                    1,   // linear vz
+                    1,   // angular vx
+                    1,   // angular vy
+                    1}}; // angular vz
+
+        VectorXd velocities(6);
+        velocities << globalVelocity,
+            globalVelocity,
+            globalVelocity,
+            globalVelocity,
+            globalVelocity,
+            globalVelocity;
+
+        if (!isAtSingularity)
+        {
+            velocities = getJointVelocities(J, v);
+            velocities /= 2 * M_PI; // devide by 2*M_PIU for rev/sec
+            velocities *= 6;
+        }
+        logBuffer = format("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} | phi:{: .3f} theta:{: .3f} psi:{: .3f} | {} | ∞: {:d} \r\n",
+                           FK_coor.y,
+                           FK_coor.z,
+                           FK_coor.x,
+                           deg(IKOut.theta1),
+                           deg(IKOut.theta2),
+                           deg(IKOut.theta3),
+                           deg(IKOut.theta4),
+                           deg(IKOut.theta5),
+                           deg(IKOut.theta6),
+                           deg(devOrientation.phi),
+                           deg(devOrientation.theta),
+                           deg(devOrientation.psi),
+                           bitset<8>(fullIKSolution.validationFlags.bits).to_string().c_str(),
+                           isAtSingularity);
+
+        if (loopCount < 10)
+            cout << logBuffer;
+
+        logger << logBuffer;
+    }
+    cout << "Output truncated... -> See \"sim_log.log\"" << endl;
+    logger.close();
 }
