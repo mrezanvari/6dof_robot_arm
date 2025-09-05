@@ -1,4 +1,5 @@
 #include <math.h>
+#include <bitset>
 
 enum SystemStates
 {
@@ -482,6 +483,7 @@ void system_run()
       upperJointMotor.SetBrake();
       wristBaseJointMotor.SetBrake();
       wristLowerJointMotor.SetBrake();
+      wristUpperJointMotor.SetBrake();
     }
     else
     {
@@ -490,6 +492,7 @@ void system_run()
       upperJointMotor.SetStop();
       wristBaseJointMotor.SetStop();
       wristLowerJointMotor.SetStop();
+      wristUpperJointMotor.SetStop();
     }
 
     currentMotorPosition = MotorPosition(
@@ -593,7 +596,8 @@ void system_run()
         -362.296);
 
     JointAngle IKOut;
-    bool fullIK_out = IK(newIKCoor, devOrientation, &IKOut);
+    // bool fullIK_out = IK(newIKCoor, devOrientation, &IKOut);
+    IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &IKOut);
 
     currentPosition = IKOut.toMotorPosition();
     baseJointMotor.SetBrake();
@@ -674,7 +678,7 @@ void system_run()
     motor_cmd[5].accel_limit = 20;
     wristUpperJointMotor.SetPosition(motor_cmd[5], &motor_position_fmt, &motor_query_fmt);
 
-    Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f │ t0: %1.3f t1: %1.3f t2: %1.3f t3: %1.3f t4: %1.3f t5: %1.3f | phi:% 1.3f theta:% 1.3f psi:% 1.3f | ∞: %d \r\n",
+    Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f │ t0: %1.3f t1: %1.3f t2: %1.3f t3: %1.3f t4: %1.3f t5: %1.3f | phi:% 1.3f theta:% 1.3f psi:% 1.3f | %s | ∞: %d \r\n",
                   FK_coor.x,
                   FK_coor.y,
                   FK_coor.z,
@@ -687,6 +691,7 @@ void system_run()
                   deg(devOrientation.phi),
                   deg(devOrientation.theta),
                   deg(devOrientation.psi),
+                  bitset<8>(fullIKSolution.validationFlags.bits).to_string().c_str(),
                   isAtSingularity);
 
     delay(updteInterval);
