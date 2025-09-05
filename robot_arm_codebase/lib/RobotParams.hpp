@@ -37,7 +37,7 @@ const vector<DHParams> globalJointParams =
             0,
             rad(90),
             0.0,
-            {rad(0), rad(360)}),
+            {rad(-180), rad(180)}),
         DHParams(
             0,
             0,
