@@ -173,19 +173,21 @@ struct DHParams
 struct IKSolution
 {
     /*
-        This istruct is meant to hold all 8 solutions of the IK
+        This struct is meant to hold all 8 solutions of the IK
         2: elbow up/down
-        2: wrsit up/down
+        2: wrist up/down
         2: shoulder left/right
 
         all thetas are accessible as a flat array of 36 thetas
     */
+
     struct Wrist
     {
         double theta1;
         double theta2;
         double theta3;
     };
+
     struct Elbow
     {
         double theta1;
@@ -194,11 +196,13 @@ struct IKSolution
         Wrist wrist1;
         Wrist wrist2;
     };
+
     struct Arm
     {
         Elbow up;
         Elbow down;
     };
+
     union
     {
         struct
@@ -208,6 +212,30 @@ struct IKSolution
         };
         double thetas[36];
     };
+
+    union ValidationFlags
+    {
+        struct
+        {
+            bool solution1_is_valid : 1;
+            bool solution2_is_valid : 1;
+            bool solution3_is_valid : 1;
+            bool solution4_is_valid : 1;
+            bool solution5_is_valid : 1;
+            bool solution6_is_valid : 1;
+            bool solution7_is_valid : 1;
+            bool solution8_is_valid : 1;
+        };
+        uint8_t bits;
+
+        constexpr ValidationFlags() : bits(0) {}
+    } validationFlags;
+
+    IKSolution() // had to manually zero everything to prevent weird values
+    {
+        for (double &theta : thetas)
+            theta = 0; // NAN; // now that this default value can be set to anything, maybe nan would be better?
+    }
 };
 #pragma pack(pop)
 
