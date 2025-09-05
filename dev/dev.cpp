@@ -27,6 +27,19 @@ void print_mat(const MatrixBase<Derived> &mat, bool newline = true, string forma
         cout << endl;
 }
 
+string objToBin(void *obj, size_t obj_size)
+{
+    unsigned char *pnt = reinterpret_cast<unsigned char *>(obj);
+    ostringstream out;
+    for (size_t i = 0; i < obj_size; i++)
+    {
+        for (size_t j = 0; j < 8; j++)
+            out << !!((pnt[i] << j) & 0x80);
+        out << " ";
+    }
+    return out.str();
+}
+
 void drawSectionLine(string sectionTitle = "")
 {
     const char *sectionLine = "─";
@@ -246,7 +259,7 @@ int main()
 
     drawSectionLine("Full IK Test"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Coor newIKCoor(367.569, 321.096, -362.296);
+    Coor newIKCoor(300, 320, -200);
     Orientation newOrientation(phi, theta, psi);
     JointAngle IKOut;
     bool fullIK_out = IK(newIKCoor, newOrientation, &IKOut);
@@ -264,7 +277,7 @@ int main()
 
     drawSectionLine("3 DoF IK with offset following textbook"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
     globalUserPos.x = 300;
-    globalUserPos.y = 450;
+    globalUserPos.y = 320;
     globalUserPos.z = -200;
 
     // xyz = yzx
@@ -285,7 +298,7 @@ int main()
     double a1 = globalJointParams[0].d; // length of lower arm -> book uses DH, we use MDH so here we use d rather than a
     double a2 = globalJointParams[2].a; // length of lower arm
     double a3 = globalJointParams[3].d; // length of upper arm
-    double d = globalJointParams[1].d;  // shoulder offset -> from the second joint DH d parameter
+    double d = 0;                       // globalJointParams[1].d;  // shoulder offset -> from the second joint DH d parameter
 
     phi = atan2(newpos.x, newpos.z);
     double r2 = pow(newpos.x, 2) + pow(newpos.z, 2) - pow(d, 2); // r squared -> from equasion 5.24 and 5.26
@@ -316,15 +329,18 @@ int main()
 
     printf("new IK right down Out ->    θ1=% .3f θ2=% .3f θ3=% .3f\r\n\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
 
+    theta2_elbow_up = atan2(s, -sqrt(r2)) + atan2(a3 * cos(theta3_elbow_up), a2 + (a3 * sin(theta3_elbow_up)));
+    theta2_elbow_down = atan2(s, -sqrt(r2)) + atan2(a3 * cos(theta3_elbow_down), a2 + (a3 * sin(theta3_elbow_down)));
+
     tempAngle.theta1 = theta1_left;
-    tempAngle.theta2 = M_PI / 2 + theta2_elbow_up;
-    tempAngle.theta3 = M_PI + theta3_elbow_up;
+    tempAngle.theta2 = theta2_elbow_up;
+    tempAngle.theta3 = theta3_elbow_up;
 
     printf("new IK left up Out ->       θ1=% .3f θ2=% .3f θ3=% .3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
 
     tempAngle.theta1 = theta1_left;
-    tempAngle.theta2 = M_PI / 2 + theta2_elbow_down;
-    tempAngle.theta3 = M_PI + theta3_elbow_down;
+    tempAngle.theta2 = theta2_elbow_down;
+    tempAngle.theta3 = theta3_elbow_down;
 
     printf("new IK left down Out ->     θ1=% .3f θ2=% .3f θ3=% .3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3));
 
@@ -358,5 +374,44 @@ int main()
     cout << endl
          << endl;
 
-    cout << sizeof(IKSolution) / sizeof(double) << endl;
+    validate3DoFIKSolutions(&iksol);
+    printf("Solution validation: %s\r\n", objToBin(&iksol.validationFlags.bits, 1).c_str());
+
+    drawSectionLine("6 DoF IK with offset following textbook"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    IK(newIKCoor, newOrientation, &IKOut);
+    FK_out = FK(IKOut);
+    printf("FK Coor->      x=% .3f y=% .3f z=% .3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
+    printf("IK Out ->                   θ1:% .3f θ2:% .3f θ3:% .3f θ4:% .3f θ5:% .3f θ6:% .3f\r\n\r\n", deg(IKOut.theta1), deg(IKOut.theta2), deg(IKOut.theta3), deg(IKOut.theta4), deg(IKOut.theta5), deg(IKOut.theta6));
+
+    IKOut = JointAngle();
+    iksol = solveFullIK(newIKCoor, newOrientation, &IKOut);
+
+    offset = 0;
+    printf("new IK right up Out ->      ");
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(iksol.thetas[i]));
+    cout << endl;
+
+    printf("new IK right down Out ->    ");
+    offset = 9;
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(iksol.thetas[i]));
+    cout << endl
+         << endl;
+
+    printf("new IK left up Out ->       ");
+    offset = 18;
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(iksol.thetas[i]));
+    cout << endl;
+
+    printf("new IK left down Out ->     ");
+    offset = 27;
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(iksol.thetas[i]));
+    cout << endl
+         << endl;
+
+    printf("Solution validation: %s\r\n", objToBin(&iksol.validationFlags.bits, 1).c_str());
 }

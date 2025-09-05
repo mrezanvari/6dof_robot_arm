@@ -88,8 +88,45 @@ bool IK_Arm(const Coor &newpos, JointAngle *newMotorAngle, const vector<DHParams
   return validateArmSolution(newpos, armSolutions, newMotorAngle, jointParams);
 }
 
+JointAngle pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStableSolution)
+{
+  return JointAngle();
+}
+
+void validate3DoFIKSolutions(IKSolution *newIKSolution, const vector<DHParams> &jointParams = globalJointParams)
+{
+  /*
+    Validate 3 dof solutions
+    At this stage, any nan values would automatically invalidate both wrist options,
+    hence the 3*isnan -> 3 in bin = 11.
+  */
+  const size_t solutionThetaCount = 36;
+  const size_t nexSolutionOffset = 9;
+
+  uint8_t currentSolution = 0;
+  for (uint8_t offset = 0; offset < solutionThetaCount; offset += nexSolutionOffset)
+  {
+    for (uint8_t i = offset; i < offset + 3; ++i)
+      newIKSolution->validationFlags.bits |= 3 * ((isnan(newIKSolution->thetas[i])) ||
+                                                  (newIKSolution->thetas[i] < jointParams[i - offset].limits.min ||
+                                                   newIKSolution->thetas[i] > jointParams[i - offset].limits.max))
+                                             << currentSolution; // shift 11 or 00 to position of current solution then OR with current state
+
+    currentSolution += 2;
+  }
+
+  newIKSolution->validationFlags.bits = ~newIKSolution->validationFlags.bits; // so far we assign 1 to ones that are invalid -> so invert to make sense
+}
+
 void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHParams> &jointParams = globalJointParams)
 {
+  if (newpos.y < 0)
+  {
+    for (uint8_t i; i < sizeof(newIKSolution->thetas) / sizeof(newIKSolution->thetas[0]); ++i)
+      newIKSolution->thetas[i] = NAN;
+    return;
+  }
+
   double a1 = jointParams[0].d; // length of lower arm -> book uses DH, we use MDH so here we use d rather than a
   double a2 = jointParams[2].a; // length of lower arm
   double a3 = jointParams[3].d; // length of upper arm
@@ -121,18 +158,110 @@ void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHP
   newIKSolution->right.down.theta2 = theta2_elbow_down;
   newIKSolution->right.down.theta3 = theta3_elbow_down;
 
-  // TODO: Must be asked, are theta 2 and 3 for both left and right solutions the same just opposite?
   newIKSolution->left.up.theta1 = theta1_left;
-  newIKSolution->left.up.theta2 = M_PI / 2 + theta2_elbow_up;
-  newIKSolution->left.up.theta3 = M_PI + theta3_elbow_up;
+  newIKSolution->left.up.theta2 = M_PI - theta2_elbow_up;
+  newIKSolution->left.up.theta3 = M_PI - theta3_elbow_up;
 
   newIKSolution->left.down.theta1 = theta1_left;
-  newIKSolution->left.down.theta2 = M_PI / 2 + theta2_elbow_down;
-  newIKSolution->left.down.theta3 = M_PI + theta3_elbow_down;
+  newIKSolution->left.down.theta2 = M_PI - theta2_elbow_down;
+  newIKSolution->left.down.theta3 = M_PI - theta3_elbow_down;
 }
 
-void solveWristIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHParams> &jointParams = globalJointParams)
+void validateWristIKSolutions(IKSolution *newIKSolution, const vector<DHParams> &jointParams = globalJointParams)
 {
+  int offsetMultiplier = 1; // value will be [1, 2, 4, 5, 7, 8, 10, 11]
+  for (int currentSolution = 0; currentSolution < 8; ++currentSolution)
+  {
+    int offset = offsetMultiplier * 3;
+    offsetMultiplier += ((currentSolution + 1) % 2 == 0) ? 2 : 1; // skip 3, 6, 9
+
+    if (!(newIKSolution->validationFlags.bits & (1 << currentSolution)))
+      continue;
+
+    for (int i = offset; i < offset + 3; ++i)
+      newIKSolution->validationFlags.bits &= ~((isnan(newIKSolution->thetas[i]) ||
+                                                (newIKSolution->thetas[i] < jointParams[i - offset + 3].limits.min ||
+                                                 newIKSolution->thetas[i] > jointParams[i - offset + 3].limits.max))
+                                               << currentSolution); // shift invalid solution to position in byte then invert and AND with validation flags
+  }
+}
+
+IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAngle, const vector<DHParams> &jointParams = globalJointParams)
+{
+  Vector3d O{{
+      newpos.z,
+      newpos.x,
+      newpos.y,
+  }}; // origin of desired end-effector position
+
+  Matrix3d R = createRotationMatrix(newOrientation);         // rotation matrix of end-effector with respect to base origin
+  Vector3d oc = O - (globalJointParams.back().d * R.col(2)); // offset origin of end-effector
+
+  Coor ikIn;
+  ikIn.x = oc(1);
+  ikIn.y = oc(2);
+  ikIn.z = oc(0);
+
+  IKSolution newIKSolution;
+  solve3DoFIK(ikIn, &newIKSolution, jointParams);
+  validate3DoFIKSolutions(&newIKSolution);
+
+  /*
+    There are 4 arm solutions -> left up, left down, right up, right down
+    Each have 2 wrist solutions -> left up wrist1, left down wrist2 ...
+
+    here, we traverse the thetas of IKSolution by the number of arm solutions = 4
+    we check the validationFlags for arm solutions that are valid
+    we then, solve for the orientation of each and populate both wrist solutions
+    which are the last 6 thetas of the solution.
+    The indicies are formated as:
+    index:  012 ........... 345 ....... 678
+        (arm thetas)      (wrist 1)   (wrist2)
+  */
+
+  for (uint8_t solution = 0; solution < 4; ++solution)
+  {
+    uint8_t offset = solution * 9;
+    if (newIKSolution.validationFlags.bits & (1 << solution * 2)) // check for valid arm
+    {
+      JointAngle tempAngles;
+      for (uint8_t i = 0; i < 3; ++i) // convert to JointAngles
+        tempAngles.thetas[i] = newIKSolution.thetas[i + offset];
+
+      auto FK_out = FK(tempAngles);
+      vector<Matrix4d> frames = FK_out.second;
+
+      Matrix4d H03 = frames[3];
+      Matrix3d R03 = H03.block<3, 3>(0, 0);
+      Matrix3d R30 = R03.inverse();
+      Matrix3d R36 = R30 * R;
+
+      // wrist 1 solutions
+      double theta1 = atan2(R36(2, 2), R36(0, 2));
+      double theta2 = atan2(sqrt(1 - pow(R36(1, 2), 2)), -R36(1, 2));
+      double theta3 = atan2(-R36(2, 1), R36(2, 0));
+
+      // wrist 2 solutions
+      double theta1_2 = atan2(-R36(2, 2), -R36(0, 2));
+      double theta2_2 = atan2(-sqrt(1 - pow(R36(1, 2), 2)), -R36(1, 2));
+      double theta3_2 = atan2(R36(2, 1), -R36(2, 0));
+
+      // offset + 3 arm thetas + index of wrist solution
+      newIKSolution.thetas[offset + 3 + 0] = theta1;
+      newIKSolution.thetas[offset + 3 + 1] = theta2;
+      newIKSolution.thetas[offset + 3 + 2] = theta3;
+      newIKSolution.thetas[offset + 3 + 3] = theta1_2;
+      newIKSolution.thetas[offset + 3 + 4] = theta2_2;
+      newIKSolution.thetas[offset + 3 + 5] = theta3_2;
+    }
+  }
+
+  validateWristIKSolutions(&newIKSolution);
+
+  for (uint8_t i = 0; i < 6; ++i) // simply set the first one for output
+    newMotorAngle->thetas[i] = newIKSolution.thetas[i];
+
+  return newIKSolution;
 }
 
 bool IK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAngle, const vector<DHParams> &jointParams = globalJointParams)
