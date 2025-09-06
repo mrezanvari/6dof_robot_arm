@@ -49,7 +49,6 @@ MatrixXd createJacobianMatrix(const vector<Matrix4d> &frames)
     jacobian.block<3, 1>(3, ind) = zi;
   }
 
-  // TODO:do singularity checks
   return jacobian;
 }
 

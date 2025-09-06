@@ -143,6 +143,8 @@ void checkSerial()
       tempPos.x = cmd[2].equalsIgnoreCase("nan") ? tempPos.x : cmd[2].toDouble();
       tempPos.y = cmd[3].equalsIgnoreCase("nan") ? tempPos.y : cmd[3].toDouble();
       tempPos.z = cmd[4].equalsIgnoreCase("nan") ? tempPos.z : cmd[4].toDouble();
+      tempPos.axisType = Coor::CoorType::Y_UP;
+      tempPos.coorScale = Coor::CoorScale::MILLIMETER;
 
       if (cmdSize == 8)
       {

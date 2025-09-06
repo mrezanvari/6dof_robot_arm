@@ -4,8 +4,8 @@
 #include "../robot_arm_codebase/lib/FKUtils.hpp"
 #include "../robot_arm_codebase/lib/JacobianUtils.hpp"
 #include <vector>
-#include <fstream>
 #include <string>
+#include <fstream>
 #include <format>
 
 Coor globalUserPos;
@@ -43,6 +43,11 @@ string objToBin(void *obj, size_t obj_size)
     return out.str();
 }
 
+template <typename... Args>
+string dyna_print(string_view rt_fmt_str, Args &&...args)
+{
+    return vformat(rt_fmt_str, std::make_format_args(args...));
+}
 void drawSectionLine(string sectionTitle = "")
 {
     const char *sectionLine = "─";
@@ -184,12 +189,12 @@ int main()
     drawSectionLine("6 DoF IK Dev"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     testAngle = {
-        rad(134.189),
-        rad(1.855),
-        rad(86.254),
-        rad(-1.330),
-        rad(78.959),
-        rad(95.663)};
+        rad(134.600),
+        rad(43.610),
+        rad(18.829),
+        rad(0.052),
+        rad(61.537),
+        rad(0)};
 
     printf("\r\nFor                θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f deg\r\n",
            deg(testAngle.theta1),
@@ -217,8 +222,8 @@ int main()
         FK_out.first.z,
     }};
 
-    phi = rad(140.000); // 134.54487
-    theta = rad(12);    // 56.02402
+    phi = rad(134.54487);  // 134.54487
+    theta = rad(56.02402); // 56.02402
     psi = rad(0);
 
     printf("\r\nroll/phi: % .5f\r\npitch/theta: % .5f\r\nyaw/psi: % .5f\r\n\r\n", deg(phi), deg(theta), deg(psi));
@@ -293,7 +298,7 @@ int main()
 
     drawSectionLine("Full IK Test"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Coor newIKCoor(300, 320, -200);
+    Coor newIKCoor(367.569, 321.100, -362.294);
     Orientation newOrientation(phi, theta, psi);
     JointAngle IKOut;
     bool fullIK_out = IK(newIKCoor, newOrientation, &IKOut);
@@ -449,6 +454,16 @@ int main()
 
     printf("Solution validation: %s\r\n", objToBin(&iksol.validationFlags.bits, 1).c_str());
 
+    drawSectionLine("Test Coor Z-Up"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Coor yup_coor(111, 222, 333);
+    Coor zup_coor = yup_coor.toZUp();
+    Coor newYup = zup_coor.toYUp();
+
+    printf("Y-Up x:% f y:% f z:%  f\r\n", yup_coor.x, yup_coor.y, yup_coor.z);
+    printf("Z-Up x:% f y:% f z:%  f\r\n", zup_coor.x, zup_coor.y, zup_coor.z);
+    printf("?-Up x:% f y:% f z:%  f\r\n", newYup.x, newYup.y, newYup.z);
+
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     cout << "To begin simulation, type 'yes':" << endl;
@@ -528,21 +543,21 @@ int main()
             velocities /= 2 * M_PI; // devide by 2*M_PIU for rev/sec
             velocities *= 6;
         }
-        logBuffer = format("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} | phi:{: .3f} theta:{: .3f} psi:{: .3f} | {} | ∞: {:d} \r\n",
-                           FK_coor.y,
-                           FK_coor.z,
-                           FK_coor.x,
-                           deg(IKOut.theta1),
-                           deg(IKOut.theta2),
-                           deg(IKOut.theta3),
-                           deg(IKOut.theta4),
-                           deg(IKOut.theta5),
-                           deg(IKOut.theta6),
-                           deg(devOrientation.phi),
-                           deg(devOrientation.theta),
-                           deg(devOrientation.psi),
-                           bitset<8>(fullIKSolution.validationFlags.bits).to_string().c_str(),
-                           isAtSingularity);
+        logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} | phi:{: .3f} theta:{: .3f} psi:{: .3f} | {} | ∞: {:d} \r\n",
+                               FK_coor.y,
+                               FK_coor.z,
+                               FK_coor.x,
+                               deg(IKOut.theta1),
+                               deg(IKOut.theta2),
+                               deg(IKOut.theta3),
+                               deg(IKOut.theta4),
+                               deg(IKOut.theta5),
+                               deg(IKOut.theta6),
+                               deg(devOrientation.phi),
+                               deg(devOrientation.theta),
+                               deg(devOrientation.psi),
+                               bitset<8>(fullIKSolution.validationFlags.bits).to_string(),
+                               isAtSingularity);
 
         if (loopCount < 10)
             cout << logBuffer;

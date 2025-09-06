@@ -1,13 +1,4 @@
 #pragma once
-#ifdef ARDUINO
-#include <ArduinoEigenDense.h>
-#else
-#include <Eigen/Dense>
-#endif
-
-using namespace Eigen;
-using Eigen::MatrixXd;
-
 #include "RobotParams.hpp"
 
 Matrix4d createDHMatrix(double theta, DHParams dhparams)
