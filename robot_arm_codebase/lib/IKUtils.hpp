@@ -279,7 +279,7 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
     for (uint8_t i = 0; i < 6; ++i) // simply set the first one for output
       newMotorAngle->thetas[i] = newIKSolution.thetas[i];
   else
-    for (double &theta : newIKSolution.thetas)
+    for (double &theta : newMotorAngle->thetas)
       theta = NAN;
 
   return newIKSolution;

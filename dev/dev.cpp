@@ -294,7 +294,7 @@ int main()
 
     drawSectionLine("Full IK Test"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Coor newIKCoor(367.569, 321.100, -362.294, Coor::CoorType::Y_UP, Coor::CoorScale::MILLIMETER);
+    Coor newIKCoor(367.569, 321.100, -362.294);
     Orientation newOrientation(phi, theta, psi);
     JointAngle IKOut;
     bool fullIK_out = IK(newIKCoor, newOrientation, &IKOut);
@@ -477,7 +477,7 @@ int main()
         rad(50),
         0);
 
-    newIKCoor = Coor(367.569, 321.096, -362.296, Coor::CoorType::Y_UP, Coor::CoorScale::MILLIMETER);
+    newIKCoor = Coor(367.569, 321.096, -362.296);
 
     int moveDir = 1;
 
@@ -500,14 +500,14 @@ int main()
 
         if (devOrientation.theta >= rad(180))
             moveDir = -1;
-        else if (devOrientation.theta <= rad(-90))
+        else if (devOrientation.theta <= rad(-180))
             moveDir = 1;
 
         // bool fullIK_out = IK(newIKCoor, devOrientation, &IKOut);
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &IKOut);
-        if (isAtSingularity)
-            for (int i = 6; i < 9; ++i)
-                IKOut.thetas[i - 3] = fullIKSolution.thetas[i];
+        // if (isAtSingularity)
+        //     for (int i = 6; i < 9; ++i)
+        //         IKOut.thetas[i - 3] = fullIKSolution.thetas[i];
 
         currentMotorPosition = IKOut.toMotorPosition();
         FK_out = FK(currentMotorPosition.toJointAngle());
@@ -537,7 +537,11 @@ int main()
             velocities /= 2 * M_PI; // devide by 2*M_PIU for rev/sec
             velocities *= 6;
         }
-        logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} | phi:{: .3f} theta:{: .3f} psi:{: .3f} | {} | ∞: {:d} \r\n",
+
+        FullPivLU<MatrixXd> fivLU(J);
+        int rank = fivLU.rank();
+
+        logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} | phi:{: .3f} theta:{: .3f} psi:{: .3f} | {} | J11 det:{: .5f} J22 det:{: .5f} | rank:{} |∞: {:d}\r\n",
                                FK_coor.y,
                                FK_coor.z,
                                FK_coor.x,
@@ -551,6 +555,9 @@ int main()
                                deg(devOrientation.theta),
                                deg(devOrientation.psi),
                                bitset<8>(fullIKSolution.validationFlags.bits).to_string(),
+                               singular_out.second.first,
+                               singular_out.second.second,
+                               rank,
                                isAtSingularity);
 
         if (loopCount < 10)
