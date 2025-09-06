@@ -22,7 +22,7 @@ pair<bool, pair<double, double>> IsSingular(MatrixXd &jacobian, double epsilon =
   // if we want rescale the final determinant
   // we must do pow(scale of one, 3)
   // so 1000^3 = 1000000000.0;
-  double det11 = J11.determinant() / 1000000000.0;
+  double det11 = J11.determinant(); // / 1000000000.0; // removed since we are now using meters
   double det22 = J22.determinant();
   bool singularity = abs(det11 * det22) <= epsilon;
   pair<double, double> determinants = {det11, det22};

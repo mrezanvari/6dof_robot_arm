@@ -216,12 +216,7 @@ int main()
     double phi = atan2(Rn(1, 2), Rn(0, 2));
     double psi = atan2(Rn(2, 1), -Rn(2, 0));
 
-    Vector3d O{{
-        FK_out.first.x,
-        FK_out.first.y,
-        FK_out.first.z,
-    }};
-
+    Vector3d O = FK_out.first.toMeter().toVector3d();
     phi = rad(134.54487);  // 134.54487
     theta = rad(56.02402); // 56.02402
     psi = rad(0);
@@ -247,6 +242,7 @@ int main()
     ikIn.x = oc(1);
     ikIn.y = oc(2);
     ikIn.z = oc(0);
+    ikIn.coorScale = Coor::CoorScale::METER;
     tempAngle = JointAngle();
     IK_Arm(ikIn, &tempAngle);
     IKSolution tstSol;
@@ -298,7 +294,7 @@ int main()
 
     drawSectionLine("Full IK Test"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Coor newIKCoor(367.569, 321.100, -362.294);
+    Coor newIKCoor(367.569, 321.100, -362.294, Coor::CoorType::Y_UP, Coor::CoorScale::MILLIMETER);
     Orientation newOrientation(phi, theta, psi);
     JointAngle IKOut;
     bool fullIK_out = IK(newIKCoor, newOrientation, &IKOut);
@@ -323,7 +319,7 @@ int main()
     // code - book
     // return pair(Coor(position(1), position(2), position(0)), frames);
 
-    Coor newpos = globalUserPos; // just to keep the names consistent
+    Coor newpos = globalUserPos.toMeter(); // just to keep the names consistent
     tempAngle = JointAngle();
 
     printf("Coor  ->         x= %1.2f y= %1.2f z= %1.2f\r\n", globalUserPos.x, globalUserPos.y, globalUserPos.z);
@@ -480,10 +476,8 @@ int main()
         rad(140),
         rad(50),
         0);
-    newIKCoor = Coor(
-        367.569,
-        321.096,
-        -362.296);
+
+    newIKCoor = Coor(367.569, 321.096, -362.296, Coor::CoorType::Y_UP, Coor::CoorScale::MILLIMETER);
 
     int moveDir = 1;
 

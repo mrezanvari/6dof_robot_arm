@@ -15,25 +15,25 @@
 const vector<DHParams> globalJointParams =
     {
         DHParams(
-            167.719,
+            167.719 / 1000.0,
             0.0,
             0.0,
             0.0,
             {rad(0), rad(180)}),
         DHParams(
-            0, // 19.898, // sholder offset denoted as d in the Figure 5.6 of the book
+            0, // 19.898 / 1000.0, // sholder offset denoted as d in the Figure 5.6 of the book
             0,
             rad(90),
             0.0,
             {rad(0), rad(180)}),
         DHParams(
             0,
-            250.201,
+            250.201 / 1000.0,
             0,
             0.0,
             {rad(-40), rad(220)}),
         DHParams(
-            231.03,
+            231.03 / 1000.0,
             0,
             rad(90),
             0.0,
@@ -45,7 +45,7 @@ const vector<DHParams> globalJointParams =
             0.0,
             {rad(-100), rad(100)}),
         DHParams(
-            156.927, // center of joint to center of ball
+            156.927 / 1000.0, // center of joint to center of ball
             0,
             rad(90),
             0.0,
@@ -61,32 +61,32 @@ const vector<DHParams> globalJointParams =
 const vector<DHParams> preciseJointParams =
     {
         DHParams(
-            167.719,
+            167.719 / 1000.0,
             0.0,
             0.0,
             0.0),
         DHParams(
-            19.898,
+            19.898 / 1000.0,
             0,
             rad(90),
             0.0),
         DHParams(
-            -0.39,
-            250.201,
+            -0.39 / 1000.0,
+            250.201 / 1000.0,
             0,
             0.0),
         DHParams(
-            231.03,
+            231.03 / 1000.0,
             0,
             rad(90),
             0.0),
         DHParams(
-            2.785,
+            2.785 / 1000.0,
             0,
             -rad(90),
             0.0),
         DHParams(
-            156.927,
+            156.927 / 1000.0,
             0,
             rad(90),
             0.0),

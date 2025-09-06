@@ -53,8 +53,10 @@ pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams>
 
   Block position = frames.back().block<3, 1>(0, 3); // origin of the frame Tn which corresponds to our end effector
 
-  // return pair(Coor(position(1), position(2), position(0)), frames);
-  return pair(Coor(position(0), position(1), position(2)), frames);
+  Coor fkCoorOut(position(0), position(1), position(2), Coor::CoorType::Z_UP, Coor::CoorScale::METER);
+
+  fkCoorOut = fkCoorOut.toMillimeters();
+  return pair(fkCoorOut, frames);
 }
 
 Coor FK_precise(const JointAngle &angles)
