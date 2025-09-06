@@ -9,6 +9,8 @@ const double IK_a1 = 167.719; // height of lower joint
 const double IK_a2 = 250.201; // length of lower arm
 const double IK_a3 = 231.03;  // length of upper arm -> centre of joint 5
 
+#define sq(x) ((x) * (x)) // Sqare function instead of pow(x, 2)
+
 bool validateArmSolution(const Coor &newCoor, const IKSoutionSet &armSolutions, JointAngle *newMotorAngle, const vector<DHParams> &jointParams)
 {
   ValidationFlags flags;
@@ -64,16 +66,20 @@ bool IK_Arm(const Coor &newpos, JointAngle *newMotorAngle, const vector<DHParams
 {
   float r1, r2, r3, phi1, phi2, phi3;
 
+  Coor localPos = newpos;
+  if (newpos.axisType != Coor::CoorType::Y_UP)
+    localPos = newpos.toYUp();
+
   IKSoutionSet armSolutions;
 
-  r1 = sqrt(pow(newpos.x, 2) + pow(newpos.z, 2));
-  r2 = newpos.y - IK_a1;
+  r1 = sqrt(sq(localPos.x) + sq(localPos.z));
+  r2 = localPos.y - IK_a1;
   phi2 = atan2(r2, r1);
-  r3 = sqrt(pow(r2, 2) + pow(r1, 2));
-  phi1 = acos(((pow(IK_a3, 2) - pow(IK_a2, 2) - pow(r3, 2))) / (-2 * IK_a2 * r3));
-  phi3 = acos((pow(r3, 2) - pow(IK_a2, 2) - pow(IK_a3, 2)) / (-2 * IK_a2 * IK_a3));
+  r3 = sqrt(sq(r2) + sq(r1));
+  phi1 = acos(((sq(IK_a3) - sq(IK_a2) - sq(r3))) / (-2 * IK_a2 * r3));
+  phi3 = acos((sq(r3) - sq(IK_a2) - sq(IK_a3)) / (-2 * IK_a2 * IK_a3));
 
-  armSolutions.rightArm.elbowUp.theta1 = atan2(newpos.x, newpos.z);
+  armSolutions.rightArm.elbowUp.theta1 = atan2(localPos.x, localPos.z);
   armSolutions.rightArm.elbowUp.theta2 = phi1 + phi2;
   armSolutions.rightArm.elbowUp.theta3 = phi3 - (M_PI / 2); // from the notes: M_PI - phi3 but the 0 of joint 3 in textbook is pointing straight down so -90
 
@@ -85,7 +91,7 @@ bool IK_Arm(const Coor &newpos, JointAngle *newMotorAngle, const vector<DHParams
   armSolutions.leftArm.elbowUp = armSolutions.rightArm.elbowUp;     // for now ignore left arm
   armSolutions.leftArm.elbowDown = armSolutions.rightArm.elbowDown; // for now ignore left arm
 
-  return validateArmSolution(newpos, armSolutions, newMotorAngle, jointParams);
+  return validateArmSolution(localPos, armSolutions, newMotorAngle, jointParams);
 }
 
 JointAngle pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStableSolution)
@@ -120,10 +126,14 @@ void validate3DoFIKSolutions(IKSolution *newIKSolution, const vector<DHParams> &
 
 void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHParams> &jointParams = globalJointParams)
 {
-  if (newpos.y < 0)
+  Coor localPos = newpos;
+  if (newpos.axisType != Coor::CoorType::Z_UP)
+    localPos = newpos.toZUp();
+
+  if (localPos.z < 0)
   {
-    for (uint8_t i; i < sizeof(newIKSolution->thetas) / sizeof(newIKSolution->thetas[0]); ++i)
-      newIKSolution->thetas[i] = NAN;
+    for (double &theta : newIKSolution->thetas)
+      theta = NAN;
     return;
   }
 
@@ -132,23 +142,27 @@ void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHP
   double a3 = jointParams[3].d; // length of upper arm
   double d = jointParams[1].d;  // shoulder offset -> from the second joint DH d parameter
 
-  double phi = atan2(newpos.x, newpos.z);
-  double r2 = pow(newpos.x, 2) + pow(newpos.z, 2) - pow(d, 2);           // r squared -> from equation 5.24 and 5.26
-  double s = (newpos.y - a1);                                            // from equation 5.24 and 5.26
-  double D = (r2 + pow(s, 2) - pow(a2, 2) - pow(a3, 2)) / (2 * a2 * a3); // from equation 5.24
+  double phi = atan2(localPos.y, localPos.x);
+  double r2 = sq(localPos.y) + sq(localPos.x) - sq(d);       // r squared -> from equation 5.24 and 5.26
+  double s = (localPos.z - a1);                              // from equation 5.24 and 5.26
+  double D = (r2 + sq(s) - sq(a2) - sq(a3)) / (2 * a2 * a3); // from equation 5.24
 
-  double alpha_right = atan2(d, sqrt(r2));
-  double alpha_left = atan2(-d, -sqrt(r2));
+  double r2_sqrt = sqrt(r2);
+  double alpha_right = atan2(d, r2_sqrt);
+  double alpha_left = atan2(-d, -r2_sqrt);
 
   double theta1_right = phi - alpha_right; // right arm -> for us
   double theta1_left = phi + alpha_left;   // left arm
 
   // NOTE: Our quadrants are different from the book
-  double theta3_elbow_up = atan2(D, sqrt(1 - pow(D, 2)));
-  double theta2_elbow_up = atan2(s, sqrt(r2)) + atan2(a3 * cos(theta3_elbow_up), a2 + (a3 * sin(theta3_elbow_up)));
+  double acos_sqrt = sqrt(1 - sq(D));
+  double atan2_s_r2_sqrt = atan2(s, r2_sqrt);
 
-  double theta3_elbow_down = atan2(D, -sqrt(1 - pow(D, 2)));
-  double theta2_elbow_down = atan2(s, sqrt(r2)) + atan2(a3 * cos(theta3_elbow_down), a2 + (a3 * sin(theta3_elbow_down)));
+  double theta3_elbow_up = atan2(D, acos_sqrt);
+  double theta2_elbow_up = atan2_s_r2_sqrt + atan2(a3 * cos(theta3_elbow_up), a2 + (a3 * sin(theta3_elbow_up)));
+
+  double theta3_elbow_down = atan2(D, -acos_sqrt);
+  double theta2_elbow_down = atan2_s_r2_sqrt + atan2(a3 * cos(theta3_elbow_down), a2 + (a3 * sin(theta3_elbow_down)));
 
   newIKSolution->right.up.theta1 = theta1_right;
   newIKSolution->right.up.theta2 = theta2_elbow_up;
@@ -188,19 +202,16 @@ void validateWristIKSolutions(IKSolution *newIKSolution, const vector<DHParams> 
 
 IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAngle, const vector<DHParams> &jointParams = globalJointParams)
 {
-  Vector3d O{{
-      newpos.z,
-      newpos.x,
-      newpos.y,
-  }}; // origin of desired end-effector position
+  Coor localPos = newpos;
+  if (newpos.axisType != Coor::CoorType::Z_UP)
+    localPos = newpos.toZUp();
+
+  Vector3d O = localPos.toVector3d(); // origin of desired end-effector position
 
   Matrix3d R = createRotationMatrix(newOrientation);         // rotation matrix of end-effector with respect to base origin
   Vector3d oc = O - (globalJointParams.back().d * R.col(2)); // offset origin of end-effector
 
-  Coor ikIn;
-  ikIn.x = oc(1);
-  ikIn.y = oc(2);
-  ikIn.z = oc(0);
+  Coor ikIn(oc, Coor::CoorType::Z_UP, Coor::CoorScale::MILLIMETER);
 
   IKSolution newIKSolution;
   solve3DoFIK(ikIn, &newIKSolution, jointParams);
@@ -238,12 +249,12 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
 
       // wrist 1 solutions
       double theta1 = atan2(R36(2, 2), R36(0, 2));
-      double theta2 = atan2(sqrt(1 - pow(R36(1, 2), 2)), -R36(1, 2));
+      double theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
       double theta3 = atan2(-R36(2, 1), R36(2, 0));
 
       // wrist 2 solutions
       double theta1_2 = atan2(-R36(2, 2), -R36(0, 2));
-      double theta2_2 = atan2(-sqrt(1 - pow(R36(1, 2), 2)), -R36(1, 2));
+      double theta2_2 = atan2(-sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
       double theta3_2 = atan2(R36(2, 1), -R36(2, 0));
 
       // offset + 3 arm thetas + index of wrist solution
@@ -258,8 +269,12 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
 
   validateWristIKSolutions(&newIKSolution);
 
-  for (uint8_t i = 0; i < 6; ++i) // simply set the first one for output
-    newMotorAngle->thetas[i] = newIKSolution.thetas[i];
+  if (newIKSolution.validationFlags.solution1_is_valid)
+    for (uint8_t i = 0; i < 6; ++i) // simply set the first one for output
+      newMotorAngle->thetas[i] = newIKSolution.thetas[i];
+  else
+    for (double &theta : newIKSolution.thetas)
+      theta = NAN;
 
   return newIKSolution;
 }
@@ -270,19 +285,17 @@ bool IK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAng
     Chapter 5.2:
     Spong, M. W., Hutchinson, S., & Vidyasagar, M. (2020). Robot modeling and control (Second edition.). John Wiley & Sons, Inc.
   */
-  Vector3d O{{
-      newpos.z,
-      newpos.x,
-      newpos.y,
-  }}; // origin of desired end-effector position
+
+  Coor localPos = newpos;
+  if (newpos.axisType != Coor::CoorType::Z_UP)
+    localPos = newpos.toZUp();
+
+  Vector3d O = localPos.toVector3d(); // origin of desired end-effector position
 
   Matrix3d R = createRotationMatrix(newOrientation);         // rotation matrix of end-effector with respect to base origin
   Vector3d oc = O - (globalJointParams.back().d * R.col(2)); // offset origin of end-effector
 
-  Coor ikIn;
-  ikIn.x = oc(1);
-  ikIn.y = oc(2);
-  ikIn.z = oc(0);
+  Coor ikIn(oc, Coor::CoorType::Z_UP, Coor::CoorScale::MILLIMETER);
 
   bool arm_may_proceed = IK_Arm(ikIn, newMotorAngle, jointParams);
 
@@ -296,7 +309,7 @@ bool IK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAng
 
   IKSoutionSet wristSolution;
   wristSolution.wrist.theta1 = atan2(R36(2, 2), R36(0, 2));
-  wristSolution.wrist.theta2 = atan2(sqrt(1 - pow(R36(1, 2), 2)), -R36(1, 2));
+  wristSolution.wrist.theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
   wristSolution.wrist.theta3 = atan2(-R36(2, 1), R36(2, 0));
 
   bool wrist_may_proceed = validateWristSolution(newOrientation, wristSolution, newMotorAngle, jointParams);
