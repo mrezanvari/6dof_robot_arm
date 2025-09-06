@@ -1,5 +1,13 @@
 #pragma once
+#ifdef ARDUINO
+#include <ArduinoEigenDense.h>
+#else
+#include <Eigen/Dense>
+#endif
 #include <iostream>
+
+using namespace Eigen;
+using Eigen::MatrixXd;
 
 using namespace std;
 
@@ -26,12 +34,74 @@ struct MotorPosition;
 
 struct Coor
 {
+    enum CoorType
+    {
+        Z_UP,
+        Y_UP,
+    };
+
+    enum CoorScale
+    {
+        MILLIMETER,
+        METER,
+    };
+
     double x{};
     double y{};
     double z{};
+    CoorType axisType = CoorType::Y_UP;
+    CoorScale coorScale = CoorScale::MILLIMETER;
 
     Coor() = default;
-    Coor(double x, double y, double z) : x(x), y(y), z(z) {}
+    Coor(double x, double y, double z, CoorType axisType = CoorType::Y_UP, CoorScale coorScale = CoorScale::MILLIMETER) : x(x),
+                                                                                                                          y(y),
+                                                                                                                          z(z),
+                                                                                                                          axisType(axisType),
+                                                                                                                          coorScale(coorScale) {}
+    explicit Coor(const Vector3d &v, CoorType axisType, CoorScale coorScale) : x(v(0)),
+                                                                               y(v(1)),
+                                                                               z(v(2)),
+                                                                               axisType(axisType),
+                                                                               coorScale(coorScale) {} // conversion from vector3d
+
+    Coor toZUp() const
+    {
+        // to convert from human-readable Y-Up to the book's Z-Up coordinates
+        return Coor(z, x, y, Z_UP);
+    }
+
+    Coor toYUp() const
+    {
+        // to convert from book's Z-Up to human-readable Y-Up coordinates
+        return Coor(y, z, x, Y_UP);
+    }
+
+    Vector3d toVector3d() const
+    {
+        return Vector3d{{
+            x,
+            y,
+            z,
+        }};
+    }
+
+    Coor toMeter()
+    {
+        return Coor(x / 1000.0,
+                    y / 1000.0,
+                    z / 1000.0,
+                    axisType,
+                    CoorScale::METER);
+    }
+
+    Coor toMillimeters()
+    {
+        return Coor(x * 1000.0,
+                    y * 1000.0,
+                    z * 1000.0,
+                    axisType,
+                    CoorScale::MILLIMETER);
+    }
 };
 
 struct MotorPosition
