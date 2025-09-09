@@ -102,6 +102,27 @@ struct Coor
                     axisType,
                     CoorScale::MILLIMETER);
     }
+
+    Coor &operator=(const Coor &other)
+    {
+        x = other.x;
+        y = other.y;
+        z = other.z;
+        axisType = other.axisType;
+        coorScale = other.coorScale;
+
+        return *this;
+    }
+
+    Coor operator-(const Coor &other) const
+    {
+        if (axisType != other.axisType || coorScale != other.coorScale)
+        {
+            throw std::logic_error("(-) operator ERROR: Coor objects must have be of the same coorScale and axisType");
+            return Coor(-1, -1, -1);
+        }
+        return Coor(x - other.x, y - other.y, z - other.z);
+    }
 };
 
 struct MotorPosition
