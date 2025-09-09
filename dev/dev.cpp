@@ -175,7 +175,7 @@ int main()
                 1}}; // angular vz
 
     VectorXd velocities(6);
-    velocities = getJointVelocities(J, v);
+    velocities = extractJointRelation(J, v);
     velocities /= 2 * M_PI; // devide by 2*M_PI for rev/sec
     velocities *= 8;
 
@@ -460,6 +460,110 @@ int main()
     printf("Z-Up x:% f y:% f z:%  f\r\n", zup_coor.x, zup_coor.y, zup_coor.z);
     printf("?-Up x:% f y:% f z:%  f\r\n", newYup.x, newYup.y, newYup.z);
 
+    drawSectionLine("Test (-) operator for Coor"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Coor pos1(100, 200, 300);
+    Coor pos2(100, 250, 300);
+    Coor err_pos = pos2 - pos1;
+
+    printf("pos1          x:% .3f y:% .3f z:%  .3f\r\n", pos1.x, pos1.y, pos1.z);
+    printf("pos2          x:% .3f y:% .3f z:%  .3f\r\n", pos2.x, pos2.y, pos2.z);
+    printf("error pos     x:% .3f y:% .3f z:%  .3f\r\n", err_pos.x, err_pos.y, err_pos.z);
+
+    try
+    {
+        pos2 = pos2.toMeter();
+        err_pos = pos2 - pos1;
+    }
+    catch (exception &ex)
+    {
+        cout << ex.what() << endl;
+    }
+
+    printf("error pos     x:% .3f y:% .3f z:%  .3f\r\n", err_pos.x, err_pos.y, err_pos.z);
+
+    drawSectionLine("Proper velocity calculation flow"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    JointAngle currentAngles = {
+        rad(134.600),
+        rad(43.610),
+        rad(18.829),
+        rad(0.052),
+        rad(61.537),
+        rad(0)};
+
+    auto currentFK_out = FK(currentAngles);
+    Coor currentPos = currentFK_out.first;
+    Coor desiredPos = currentPos;
+    desiredPos.y += 1;
+
+    vector<Matrix4d> currentFrames = currentFK_out.second;
+    Tn = currentFrames.back();
+    Rn = Tn.block<3, 3>(0, 0);
+
+    theta = atan2(sqrt(1 - sq(Rn(2, 2))), Rn(2, 2));
+    phi = atan2(Rn(1, 2), Rn(0, 2));
+    psi = atan2(Rn(2, 1), -Rn(2, 0));
+
+    Orientation currentOrientation(phi, theta, psi);
+    JointAngle desiredAngles;
+
+    auto ikout = solveFullIK(desiredPos, currentOrientation, &desiredAngles);
+
+    auto desiredFK_out = FK(desiredAngles);
+    vector<Matrix4d> desiredFrames = desiredFK_out.second;
+
+    Coor errorPos = desiredPos - currentPos;
+
+    printf("currentPos          x:% .3f y:% .3f z:%  .3f\r\n", currentPos.x, currentPos.y, currentPos.z);
+    printf("desiredPos          x:% .3f y:% .3f z:%  .3f\r\n", desiredPos.x, desiredPos.y, desiredPos.z);
+    printf("errorPos            x:% .3f y:% .3f z:%  .3f\r\n", errorPos.x, errorPos.y, errorPos.z);
+
+    Matrix3d currentRotation = currentFrames.back().block<3, 3>(0, 0);
+    Matrix3d desiredRotaion = desiredFrames.back().block<3, 3>(0, 0);
+
+    Matrix3d errorRotationMatrix = desiredRotaion * currentRotation.inverse();
+    AngleAxisd errorRotationAngleAxis(errorRotationMatrix);
+    Vector3d errorRotatationVector = errorRotationAngleAxis.angle() * errorRotationAngleAxis.axis();
+    MatrixXd newJ = createJacobianMatrix(currentFrames); // jacobian must use the current joint angles
+
+    printf("\r\nroll/phi: % .5f\r\npitch/theta: % .5f\r\nyaw/psi: % .5f\r\n\r\n", deg(phi), deg(theta), deg(psi));
+
+    cout << "\r\nCurrent Rotation Matrix:" << endl;
+    print_mat(currentRotation, true, " % .4f|");
+
+    cout << "\r\nDesired Rotation Matrix:" << endl;
+    print_mat(desiredRotaion, true, " % .4f|");
+
+    cout << "\r\nError Rotation Matrix:" << endl;
+    print_mat(errorRotationMatrix, true, " % .4f|");
+
+    VectorXd e(6);
+    e.head(3) = errorPos.toVector3d();
+    e.tail(3) = errorRotatationVector;
+
+    double gain = 1;
+    MatrixXd K = MatrixXd::Identity(6, 6) * gain;
+    VectorXd vee = K * e;
+
+    cout << "Error Vector of linear and angular velocities + gain:\r\n"
+         << endl;
+    cout << vee << endl;
+
+    VectorXd newVelocities(6);
+    newVelocities = extractJointRelation(newJ, vee);
+    newVelocities /= 2 * M_PI; // devide by 2*M_PI for rev/sec
+
+    printf("\r\nJacobian Velocites:\r\n");
+    for (int i = 0; i < newVelocities.size(); ++i)
+        printf("v%d:% .10f\t", i, newVelocities(i));
+    cout << endl;
+    VectorXd testVels = getJointVelocities(currentAngles, desiredAngles, gain);
+    for (int i = 0; i < testVels.size(); ++i)
+        printf("v%d:% .10f\t", i, testVels(i));
+    cout << endl;
+    // assert(testVels == newVelocities);
+
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     cout << "To begin simulation, type 'yes':" << endl;
@@ -533,7 +637,7 @@ int main()
 
         if (!isAtSingularity)
         {
-            velocities = getJointVelocities(J, v);
+            velocities = extractJointRelation(J, v);
             velocities /= 2 * M_PI; // devide by 2*M_PIU for rev/sec
             velocities *= 6;
         }

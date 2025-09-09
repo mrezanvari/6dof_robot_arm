@@ -633,7 +633,7 @@ void system_run()
 
     if (!isAtSingularity)
     {
-      velocities = getJointVelocities(J, v);
+      velocities = extractJointRelation(J, v);
       velocities /= 2 * M_PI; // devide by 2*M_PIU for rev/sec
       velocities *= 6;
     }

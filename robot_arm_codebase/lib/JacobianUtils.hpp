@@ -52,9 +52,46 @@ MatrixXd createJacobianMatrix(const vector<Matrix4d> &frames)
   return jacobian;
 }
 
-VectorXd getJointVelocities(const MatrixXd &J, const VectorXd &v)
+VectorXd extractJointRelation(const MatrixXd &J, const VectorXd &v)
 {
-  // TODO: be sure singularities are handled gracefully!
-  auto J_inv = J.inverse();
+  /*
+    Basis for velocity and force relations for the Jacobian matrix.
+    For now, it is implemeted as a simple psuedo inverse multiplied by
+    the input vector of v. Current implementation is focused on velocity
+    Jacobian so a simple inverse would suffice. But in the future
+    once can implement dampening, svd, or even force control using this
+    function. This is why it is seperated into a function, by itself
+    it deserves development down the line.
+  */
+  MatrixXd J_inv = J.completeOrthogonalDecomposition().pseudoInverse();
   return J_inv * v;
+}
+
+VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &desiredAngles, const double gain = 1)
+{
+  auto currentFK_out = FK(currentAngles);
+  auto desiredFK_out = FK(desiredAngles);
+
+  Coor currentPos = currentFK_out.first;
+  Coor desiredPos = desiredFK_out.first;
+  Coor errorPos = desiredPos - currentPos;
+
+  Matrix3d currentRotation = currentFK_out.second.back().block<3, 3>(0, 0);
+  Matrix3d desiredRotaion = desiredFK_out.second.back().block<3, 3>(0, 0);
+  Matrix3d errorRotationMatrix = desiredRotaion * currentRotation.inverse();
+  AngleAxisd errorRotationAngleAxis(errorRotationMatrix);
+  Vector3d errorRotatationVector = errorRotationAngleAxis.angle() * errorRotationAngleAxis.axis(); // convert rotation matrix to rotation vector
+
+  MatrixXd J = createJacobianMatrix(currentFK_out.second);
+  VectorXd v(6);
+  v.head(3) = errorPos.toVector3d();
+  v.tail(3) = errorRotatationVector;
+
+  MatrixXd K = MatrixXd::Identity(6, 6) * gain;
+  v = K * v;
+  VectorXd newVelocities(6);
+  newVelocities = extractJointRelation(J, v);
+  newVelocities /= 2 * M_PI;
+
+  return newVelocities;
 }

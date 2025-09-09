@@ -33,9 +33,16 @@ Matrix3d createRotationMatrix(Orientation orientation)
   double theta = orientation.theta;
   double psi = orientation.psi;
 
-  Matrix3d R{{-sin(phi) * sin(psi) + cos(phi) * cos(psi) * cos(theta), -sin(phi) * cos(psi) - sin(psi) * cos(phi) * cos(theta), sin(theta) * cos(phi)},
-             {sin(phi) * cos(psi) * cos(theta) + sin(psi) * cos(phi), -sin(phi) * sin(psi) * cos(theta) + cos(phi) * cos(psi), sin(phi) * sin(theta)},
-             {-sin(theta) * cos(psi), sin(psi) * sin(theta), cos(theta)}};
+  double sphi = sin(phi);
+  double cphi = cos(phi);
+  double stheta = sin(theta);
+  double ctheta = cos(theta);
+  double spsi = sin(psi);
+  double cpsi = cos(psi);
+
+  Matrix3d R{{-sphi * spsi + cphi * cpsi * ctheta, -sphi * cpsi - spsi * cphi * ctheta, stheta * cphi},
+             {sphi * cpsi * ctheta + spsi * cphi, -sphi * spsi * ctheta + cphi * cpsi, sphi * stheta},
+             {-stheta * cpsi, spsi * stheta, ctheta}};
 
   return R;
 }
