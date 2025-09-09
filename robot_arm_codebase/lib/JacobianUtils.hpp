@@ -89,6 +89,7 @@ VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &d
 
   MatrixXd K = MatrixXd::Identity(6, 6) * gain;
   v = K * v;
+
   VectorXd newVelocities(6);
   newVelocities = extractJointRelation(J, v);
   newVelocities /= 2 * M_PI;

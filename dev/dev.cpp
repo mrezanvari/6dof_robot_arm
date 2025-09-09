@@ -558,11 +558,10 @@ int main()
     for (int i = 0; i < newVelocities.size(); ++i)
         printf("v%d:% .10f\t", i, newVelocities(i));
     cout << endl;
-    VectorXd testVels = getJointVelocities(currentAngles, desiredAngles, gain);
+    VectorXd testVels = getJointVelocities(currentAngles, desiredAngles, 10);
     for (int i = 0; i < testVels.size(); ++i)
         printf("v%d:% .10f\t", i, testVels(i));
     cout << endl;
-    // assert(testVels == newVelocities);
 
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -587,10 +586,17 @@ int main()
 
     const int loopUpperBound = 2000;
     int loopCount = 0;
-    fstream logger;
-    logger.open("sim_log.log", fstream::out);
+    fstream p_logger;
+    p_logger.open("sim_pos.log", fstream::out);
 
-    string logBuffer;
+    fstream v_logger;
+    v_logger.open("sim_vel.log", fstream::out);
+    JointAngle currentJointAngles;
+
+    solveFullIK(newIKCoor, devOrientation, &currentJointAngles);
+
+    string p_logBuffer;
+    string v_logBuffer;
     while (++loopCount < loopUpperBound)
     {
 
@@ -607,68 +613,60 @@ int main()
         else if (devOrientation.theta <= rad(-180))
             moveDir = 1;
 
-        // bool fullIK_out = IK(newIKCoor, devOrientation, &IKOut);
-        IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &IKOut);
+        JointAngle desiredJointAngles;
+        IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
+
         // if (isAtSingularity)
         //     for (int i = 6; i < 9; ++i)
-        //         IKOut.thetas[i - 3] = fullIKSolution.thetas[i];
+        //         desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
 
-        currentMotorPosition = IKOut.toMotorPosition();
+        currentMotorPosition = currentJointAngles.toMotorPosition();
         FK_out = FK(currentMotorPosition.toJointAngle());
         FK_coor = FK_out.first;
         J = createJacobianMatrix(FK_out.second);
         auto singular_out = IsSingular(J);
         isAtSingularity = singular_out.first;
 
-        VectorXd v{{1,   // linear vx
-                    1,   // linear vy --> move 1 cm/sec upwards
-                    1,   // linear vz
-                    1,   // angular vx
-                    1,   // angular vy
-                    1}}; // angular vz
-
-        VectorXd velocities(6);
-        velocities << globalVelocity,
-            globalVelocity,
-            globalVelocity,
-            globalVelocity,
-            globalVelocity,
-            globalVelocity;
-
-        if (!isAtSingularity)
-        {
-            velocities = extractJointRelation(J, v);
-            velocities /= 2 * M_PI; // devide by 2*M_PIU for rev/sec
-            velocities *= 6;
-        }
-
         FullPivLU<MatrixXd> fivLU(J);
         int rank = fivLU.rank();
 
-        logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} | phi:{: .3f} theta:{: .3f} psi:{: .3f} | {} | J11 det:{: .5f} J22 det:{: .5f} | rank:{} |∞: {:d}\r\n",
-                               FK_coor.y,
-                               FK_coor.z,
-                               FK_coor.x,
-                               deg(IKOut.theta1),
-                               deg(IKOut.theta2),
-                               deg(IKOut.theta3),
-                               deg(IKOut.theta4),
-                               deg(IKOut.theta5),
-                               deg(IKOut.theta6),
-                               deg(devOrientation.phi),
-                               deg(devOrientation.theta),
-                               deg(devOrientation.psi),
-                               bitset<8>(fullIKSolution.validationFlags.bits).to_string(),
-                               singular_out.second.first,
-                               singular_out.second.second,
-                               rank,
-                               isAtSingularity);
+        VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 1000); // gain really high because the delta is too low
+
+        p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} | phi:{: .3f} theta:{: .3f} psi:{: .3f} | {} | J11 det:{: .5f} J22 det:{: .5f} | rank:{} |∞: {:d}\r\n",
+                                 FK_coor.y,
+                                 FK_coor.z,
+                                 FK_coor.x,
+                                 deg(desiredJointAngles.theta1),
+                                 deg(desiredJointAngles.theta2),
+                                 deg(desiredJointAngles.theta3),
+                                 deg(desiredJointAngles.theta4),
+                                 deg(desiredJointAngles.theta5),
+                                 deg(desiredJointAngles.theta6),
+                                 deg(devOrientation.phi),
+                                 deg(devOrientation.theta),
+                                 deg(devOrientation.psi),
+                                 bitset<8>(fullIKSolution.validationFlags.bits).to_string(),
+                                 singular_out.second.first,
+                                 singular_out.second.second,
+                                 rank,
+                                 isAtSingularity);
+
+        v_logBuffer = "";
+
+        for (int i = 0; i < jointVelocities.size(); ++i)
+            v_logBuffer += dyna_print("v{}:{:.10f}\t", i, jointVelocities(i));
+
+        v_logBuffer += "\r\n";
 
         if (loopCount < 10)
-            cout << logBuffer;
+            cout << p_logBuffer;
 
-        logger << logBuffer;
+        p_logger << p_logBuffer;
+        v_logger << v_logBuffer;
+
+        currentJointAngles = desiredJointAngles;
     }
     cout << "Output truncated... -> See \"sim_log.log\"" << endl;
-    logger.close();
+    p_logger.close();
+    v_logger.close();
 }
