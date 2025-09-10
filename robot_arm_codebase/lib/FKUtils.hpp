@@ -62,7 +62,7 @@ pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams>
 
   Coor fkCoorOut(position(0), position(1), position(2), Coor::CoorType::Z_UP, Coor::CoorScale::METER);
 
-  fkCoorOut = fkCoorOut.toMillimeters();
+  // fkCoorOut = fkCoorOut.toMillimeters();
   return pair(fkCoorOut, frames);
 }
 

@@ -15,7 +15,7 @@
 const vector<DHParams> globalJointParams =
     {
         DHParams(
-            167.719 / 1000.0,
+            167.719, /// 1000.0,
             0.0,
             0.0,
             0.0,
@@ -28,12 +28,12 @@ const vector<DHParams> globalJointParams =
             {rad(0), rad(180)}),
         DHParams(
             0,
-            250.201 / 1000.0,
+            250.201, /// 1000.0,
             0,
             0.0,
             {rad(-40), rad(220)}),
         DHParams(
-            231.03 / 1000.0,
+            231.03, /// 1000.0,
             0,
             rad(90),
             0.0,
@@ -45,7 +45,7 @@ const vector<DHParams> globalJointParams =
             0.0,
             {rad(-100), rad(100)}),
         DHParams(
-            156.927 / 1000.0, // center of joint to center of ball
+            156.927, /// 1000.0, // center of joint to center of ball
             0,
             rad(90),
             0.0,

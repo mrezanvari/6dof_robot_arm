@@ -68,9 +68,9 @@ bool IK_Arm(const Coor &newpos, JointAngle *newMotorAngle, const vector<DHParams
 
   Coor localPos = newpos;
   if (newpos.axisType != Coor::CoorType::Y_UP)
-    localPos = newpos.toYUp();
-  if (newpos.coorScale != Coor::CoorScale::MILLIMETER)
-    localPos = localPos.toMillimeters();
+    localPos = localPos.toYUp();
+  // if (newpos.coorScale != Coor::CoorScale::MILLIMETER)
+  //   localPos = localPos.toMillimeters();
 
   IKSoutionSet armSolutions;
 
@@ -130,9 +130,9 @@ void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHP
 {
   Coor localPos = newpos;
   if (newpos.axisType != Coor::CoorType::Z_UP)
-    localPos = newpos.toZUp();
-  if (newpos.coorScale != Coor::CoorScale::METER)
-    localPos = localPos.toMeter();
+    localPos = localPos.toZUp();
+  // if (newpos.coorScale != Coor::CoorScale::METER)
+  //   localPos = localPos.toMeter();
 
   if (localPos.z < 0)
   {
@@ -208,9 +208,9 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
 {
   Coor localPos = newpos;
   if (newpos.axisType != Coor::CoorType::Z_UP)
-    localPos = newpos.toZUp();
-  if (newpos.coorScale != Coor::CoorScale::METER)
-    localPos = localPos.toMeter();
+    localPos = localPos.toZUp();
+  // if (newpos.coorScale != Coor::CoorScale::METER)
+  //   localPos = localPos.toMeter();
 
   Vector3d O = localPos.toVector3d(); // origin of desired end-effector position
 
@@ -294,9 +294,9 @@ bool IK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAng
 
   Coor localPos = newpos;
   if (newpos.axisType != Coor::CoorType::Z_UP)
-    localPos = newpos.toZUp();
-  if (newpos.coorScale != Coor::CoorScale::METER)
-    localPos = localPos.toMeter();
+    localPos = localPos.toZUp();
+  // if (newpos.coorScale != Coor::CoorScale::METER)
+  //   localPos = localPos.toMeter();
 
   Vector3d O = localPos.toVector3d(); // origin of desired end-effector position
 

@@ -63,36 +63,42 @@ VectorXd extractJointRelation(const MatrixXd &J, const VectorXd &v)
     function. This is why it is seperated into a function, by itself
     it deserves development down the line.
   */
-  MatrixXd J_inv = J.completeOrthogonalDecomposition().pseudoInverse();
+  // MatrixXd J_inv = J.completeOrthogonalDecomposition().pseudoInverse();
+  MatrixXd J_inv = J.inverse();
   return J_inv * v;
 }
 
-VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &desiredAngles, const double gain = 1)
+VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &desiredAngles, const double gain = 1, const double singularitySpeed = 0)
 {
   auto currentFK_out = FK(currentAngles);
   auto desiredFK_out = FK(desiredAngles);
+
+  vector<Matrix4d> currentFrames = currentFK_out.second;
+  vector<Matrix4d> desiredFrames = desiredFK_out.second;
 
   Coor currentPos = currentFK_out.first;
   Coor desiredPos = desiredFK_out.first;
   Coor errorPos = desiredPos - currentPos;
 
-  Matrix3d currentRotation = currentFK_out.second.back().block<3, 3>(0, 0);
-  Matrix3d desiredRotaion = desiredFK_out.second.back().block<3, 3>(0, 0);
+  Matrix3d currentRotation = currentFrames.back().block<3, 3>(0, 0);
+  Matrix3d desiredRotaion = desiredFrames.back().block<3, 3>(0, 0);
   Matrix3d errorRotationMatrix = desiredRotaion * currentRotation.inverse();
   AngleAxisd errorRotationAngleAxis(errorRotationMatrix);
   Vector3d errorRotatationVector = errorRotationAngleAxis.angle() * errorRotationAngleAxis.axis(); // convert rotation matrix to rotation vector
 
-  MatrixXd J = createJacobianMatrix(currentFK_out.second);
+  MatrixXd J = createJacobianMatrix(currentFrames);
   VectorXd v(6);
   v.head(3) = errorPos.toVector3d();
   v.tail(3) = errorRotatationVector;
 
-  MatrixXd K = MatrixXd::Identity(6, 6) * gain;
-  v = K * v;
+  VectorXd newVelocities{{singularitySpeed, singularitySpeed, singularitySpeed, singularitySpeed, singularitySpeed, singularitySpeed}};
 
-  VectorXd newVelocities(6);
-  newVelocities = extractJointRelation(J, v);
-  newVelocities /= 2 * M_PI;
+  if (!IsSingular(J).first)
+  {
+    newVelocities = extractJointRelation(J, v);
+    newVelocities /= 2 * M_PI;
+    newVelocities *= gain;
+  }
 
   return newVelocities;
 }

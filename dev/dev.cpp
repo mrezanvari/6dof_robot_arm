@@ -599,7 +599,6 @@ int main()
     string v_logBuffer;
     while (++loopCount < loopUpperBound)
     {
-
         devOrientation.theta += rad((moveDir * 1));
         // devOrientation.phi += rad((-moveDir * 0.1));
 
@@ -613,12 +612,16 @@ int main()
         else if (devOrientation.theta <= rad(-180))
             moveDir = 1;
 
+        // newIKCoor.z += 1;
+        // if (newIKCoor.z > -50)
+        //     break;
+
         JointAngle desiredJointAngles;
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
-        // if (isAtSingularity)
-        //     for (int i = 6; i < 9; ++i)
-        //         desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
+        if (isAtSingularity)
+            for (int i = 6; i < 9; ++i)
+                desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
 
         currentMotorPosition = currentJointAngles.toMotorPosition();
         FK_out = FK(currentMotorPosition.toJointAngle());
@@ -630,7 +633,7 @@ int main()
         FullPivLU<MatrixXd> fivLU(J);
         int rank = fivLU.rank();
 
-        VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 1000); // gain really high because the delta is too low
+        VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 10); // gain really high because the delta is too low
 
         p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} | phi:{: .3f} theta:{: .3f} psi:{: .3f} | {} | J11 det:{: .5f} J22 det:{: .5f} | rank:{} |∞: {:d}\r\n",
                                  FK_coor.y,
