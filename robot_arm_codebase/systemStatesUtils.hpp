@@ -55,8 +55,8 @@ Orientation tempOrientation;
 Coor diffCoor;
 
 Orientation devOrientation(
-    rad(140),
-    rad(50),
+    rad(90),
+    rad(90),
     0);
 
 void printMotors()
@@ -587,15 +587,15 @@ void system_run()
     // double ph = constrain(rad(90) + cos(millis() * 0.0001), rad(90), rad(180));
     // printf("theta:% .5f phi:% .5f t2:% .5f p2:% .5f\r\n", deg(thet), deg(ph), deg(devOrientation.theta), deg(devOrientation.phi));
 
-    if (devOrientation.theta >= rad(110))
+    if (devOrientation.theta > rad(180))
       moveDir = -1;
-    else if (devOrientation.theta <= rad(30))
+    else if (devOrientation.theta <= rad(60))
       moveDir = 1;
 
     Coor newIKCoor(
-        367.569,
-        321.096,
-        -362.296);
+        410,
+        215,
+        0);
 
     JointAngle IKOut;
     // bool fullIK_out = IK(newIKCoor, devOrientation, &IKOut);
@@ -626,7 +626,9 @@ void system_run()
         globalVelocity,
         globalVelocity;
 
-    velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut, 4);
+    velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut, 5);
+
+    // velocities = velocities.cwiseMax(5);
 
     motor_cmd[1] = Moteus::PositionMode::Command();
     motor_cmd[1].position = currentPosition.pos2;
@@ -679,18 +681,18 @@ void system_run()
                   FK_coor.x,
                   FK_coor.y,
                   FK_coor.z,
-                  // deg(IKOut.theta1),
-                  // deg(IKOut.theta2),
-                  // deg(IKOut.theta3),
-                  // deg(IKOut.theta4),
-                  // deg(IKOut.theta5),
-                  // deg(IKOut.theta6),
-                  velocities(0),
-                  velocities(1),
-                  velocities(2),
-                  velocities(3),
-                  velocities(4),
-                  velocities(5),
+                  deg(IKOut.theta1),
+                  deg(IKOut.theta2),
+                  deg(IKOut.theta3),
+                  deg(IKOut.theta4),
+                  deg(IKOut.theta5),
+                  deg(IKOut.theta6),
+                  // velocities(0),
+                  // velocities(1),
+                  // velocities(2),
+                  // velocities(3),
+                  // velocities(4),
+                  // velocities(5),
                   deg(devOrientation.phi),
                   deg(devOrientation.theta),
                   deg(devOrientation.psi),

@@ -14,22 +14,6 @@ JointAngle tempAngle;
 using namespace Eigen;
 using Eigen::MatrixXd;
 
-template <typename Derived>
-void print_mat(const MatrixBase<Derived> &mat, bool newline = true, string formatstr = "  % 16.10G│")
-{
-    if (newline)
-        cout << endl;
-    for (size_t x = 0; x < mat.rows(); ++x)
-    {
-        for (size_t y = 0; y < mat.cols(); ++y)
-            printf(formatstr.c_str(), mat(x, y));
-        if (newline)
-            cout << endl;
-    }
-    if (newline)
-        cout << endl;
-}
-
 string objToBin(void *obj, size_t obj_size)
 {
     unsigned char *pnt = reinterpret_cast<unsigned char *>(obj);
@@ -69,6 +53,38 @@ void drawSectionLine(string sectionTitle = "")
     }
     cout << endl
          << endl;
+}
+
+template <typename Derived>
+void print_mat(const MatrixBase<Derived> &mat, bool newline = true, string formatstr = "  % 16.10G│")
+{
+    if (newline)
+        cout << endl;
+    for (size_t x = 0; x < mat.rows(); ++x)
+    {
+        for (size_t y = 0; y < mat.cols(); ++y)
+            printf(formatstr.c_str(), mat(x, y));
+        if (newline)
+            cout << endl;
+    }
+    if (newline)
+        cout << endl;
+}
+
+template <typename Derived>
+void printf_mat(const MatrixBase<Derived> &mat, string &out, bool newline = true, string formatstr = " {: 16.10G}│")
+{
+    if (newline)
+        out += "\r\n";
+    for (size_t x = 0; x < mat.rows(); ++x)
+    {
+        for (size_t y = 0; y < mat.cols(); ++y)
+            out += dyna_print(formatstr, mat(x, y));
+        if (newline)
+            out += "\r\n";
+    }
+    if (newline)
+        out += "\r\n";
 }
 
 int main()
@@ -216,7 +232,8 @@ int main()
     double phi = atan2(Rn(1, 2), Rn(0, 2));
     double psi = atan2(Rn(2, 1), -Rn(2, 0));
 
-    Vector3d O = FK_out.first.toMeter().toVector3d();
+    // Vector3d O = FK_out.first.toMeter().toVector3d();
+    Vector3d O = FK_out.first.toVector3d();
     phi = rad(134.54487);  // 134.54487
     theta = rad(56.02402); // 56.02402
     psi = rad(0);
@@ -242,12 +259,30 @@ int main()
     ikIn.x = oc(1);
     ikIn.y = oc(2);
     ikIn.z = oc(0);
-    ikIn.coorScale = Coor::CoorScale::METER;
+    // ikIn.coorScale = Coor::CoorScale::METER;
     tempAngle = JointAngle();
     IK_Arm(ikIn, &tempAngle);
     IKSolution tstSol;
     solve3DoFIK(ikIn, &tstSol);
 
+    FK_out = FK(tempAngle);
+    frames = FK_out.second;
+
+    Matrix4d H03 = frames[3];
+    Matrix3d R03 = H03.block<3, 3>(0, 0);
+    Matrix3d R30 = R03.inverse();
+    Matrix3d R36 = R30 * R;
+
+    tempAngle.theta4 = atan2(R36(2, 2), R36(0, 2));
+    tempAngle.theta5 = atan2(sqrt(1 - pow(R36(1, 2), 2)), -R36(1, 2));
+    tempAngle.theta6 = atan2(-R36(2, 1), R36(2, 0));
+
+    printf("IK Out ->          θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3), deg(tempAngle.theta4), deg(tempAngle.theta5), deg(tempAngle.theta6));
+    FK_out = FK(tempAngle);
+    printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
+
+    cout << "────────────────" << endl;
+    cout << "New 3DoF IK Solver:" << endl;
     int offsett = 0;
     printf("new IK right up Out ->      ");
     for (int i = offsett; i < offsett + 9; ++i)
@@ -276,21 +311,6 @@ int main()
 
     validate3DoFIKSolutions(&tstSol);
     printf("Solution validation: %s\r\n", objToBin(&tstSol.validationFlags.bits, 1).c_str());
-    FK_out = FK(tempAngle);
-    frames = FK_out.second;
-
-    Matrix4d H03 = frames[3];
-    Matrix3d R03 = H03.block<3, 3>(0, 0);
-    Matrix3d R30 = R03.inverse();
-    Matrix3d R36 = R30 * R;
-
-    tempAngle.theta4 = atan2(R36(2, 2), R36(0, 2));
-    tempAngle.theta5 = atan2(sqrt(1 - pow(R36(1, 2), 2)), -R36(1, 2));
-    tempAngle.theta6 = atan2(-R36(2, 1), R36(2, 0));
-
-    printf("IK Out ->          θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3), deg(tempAngle.theta4), deg(tempAngle.theta5), deg(tempAngle.theta6));
-    FK_out = FK(tempAngle);
-    printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
 
     drawSectionLine("Full IK Test"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -563,6 +583,82 @@ int main()
         printf("v%d:% .10f\t", i, testVels(i));
     cout << endl;
 
+    drawSectionLine("Axis-Angle conversions"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Matrix3d rotationFromAngleAxis;
+    rotationFromAngleAxis = AngleAxisd(phi, Vector3d::UnitZ()) *
+                            AngleAxisd(theta, Vector3d::UnitY()) *
+                            AngleAxisd(psi, Vector3d::UnitZ());
+
+    Matrix3d RotMat;
+
+    RotMat = Matrix3d{{-sin(phi) * sin(psi) + cos(phi) * cos(psi) * cos(theta),
+                       -sin(phi) * cos(psi) - sin(psi) * cos(phi) * cos(theta),
+                       sin(theta) * cos(phi)},
+                      {sin(phi) * cos(psi) * cos(theta) + sin(psi) * cos(phi),
+                       -sin(phi) * sin(psi) * cos(theta) + cos(phi) * cos(psi),
+                       sin(phi) * sin(theta)},
+                      {-sin(theta) * cos(psi),
+                       sin(psi) * sin(theta),
+                       cos(theta)}};
+
+    cout << "Roataion Matrix from angle-axis:" << endl;
+    print_mat(rotationFromAngleAxis);
+
+    cout << "Roataion Matrix from book ZYZ:" << endl;
+    print_mat(RotMat);
+
+    fstream r_logger;
+    r_logger.open("sim_rot.log", fstream::out);
+
+    int iter_i = 0;
+    const int iter_end = 5000;
+
+    string r_logBuffer;
+
+    const double saveTheta = theta;
+    int movesign = 1;
+    theta = rad(-180);
+
+    while (++iter_i < iter_end)
+    {
+        theta += rad((movesign * 1));
+        if (theta >= rad(180))
+            movesign = -1;
+        else if (theta <= rad(-180))
+            movesign = 1;
+
+        rotationFromAngleAxis = AngleAxisd(phi, Vector3d::UnitZ()) *
+                                AngleAxisd(theta, Vector3d::UnitY()) *
+                                AngleAxisd(psi, Vector3d::UnitZ());
+
+        RotMat = Matrix3d{{-sin(phi) * sin(psi) + cos(phi) * cos(psi) * cos(theta),
+                           -sin(phi) * cos(psi) - sin(psi) * cos(phi) * cos(theta),
+                           sin(theta) * cos(phi)},
+                          {sin(phi) * cos(psi) * cos(theta) + sin(psi) * cos(phi),
+                           -sin(phi) * sin(psi) * cos(theta) + cos(phi) * cos(psi),
+                           sin(phi) * sin(theta)},
+                          {-sin(theta) * cos(psi),
+                           sin(psi) * sin(theta),
+                           cos(theta)}};
+
+        // r_logBuffer = dyna_print("For theta {} Roataion Matrix from angle-axis:", theta);
+        // printf_mat(rotationFromAngleAxis, r_logBuffer);
+
+        // r_logBuffer += dyna_print("For theta {} Roataion Matrix from book ZYZ :", theta);
+        // printf_mat(RotMat, r_logBuffer);
+
+        MatrixXd delta = rotationFromAngleAxis * RotMat.inverse();
+        double threshold = 1e-8;
+        delta = (threshold < delta.array().abs()).select(delta, 0.0f);
+        r_logBuffer = dyna_print("For theta {} Roataion Matrix delta:", theta);
+        printf_mat(delta, r_logBuffer);
+
+        r_logger << r_logBuffer;
+    }
+
+    r_logger.close();
+    theta = saveTheta;
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     cout << "To begin simulation, type 'yes':" << endl;
@@ -576,11 +672,14 @@ int main()
     MotorPosition currentMotorPosition;
     double globalVelocity = 0.7;
     Orientation devOrientation(
-        rad(140),
-        rad(50),
+        rad(90),
+        rad(90),
         0);
 
-    newIKCoor = Coor(367.569, 321.096, -362.296);
+    newIKCoor = Coor(
+        410,
+        215,
+        0);
 
     int moveDir = 1;
 
@@ -599,7 +698,7 @@ int main()
     string v_logBuffer;
     while (++loopCount < loopUpperBound)
     {
-        devOrientation.theta += rad((moveDir * 1));
+        devOrientation.theta += rad((moveDir * 0.5));
         // devOrientation.phi += rad((-moveDir * 0.1));
 
         // TODO: Make the ball rotate around itself -> this would be a starting point:
@@ -607,9 +706,9 @@ int main()
         // double ph = constrain(rad(90) + cos(millis() * 0.0001), rad(90), rad(180));
         // printf("theta:% .5f phi:% .5f t2:% .5f p2:% .5f\r\n", deg(thet), deg(ph), deg(devOrientation.theta), deg(devOrientation.phi));
 
-        if (devOrientation.theta >= rad(180))
+        if (devOrientation.theta > rad(180))
             moveDir = -1;
-        else if (devOrientation.theta <= rad(-180))
+        else if (devOrientation.theta < rad(60))
             moveDir = 1;
 
         // newIKCoor.z += 1;
@@ -619,9 +718,9 @@ int main()
         JointAngle desiredJointAngles;
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
-        if (isAtSingularity)
-            for (int i = 6; i < 9; ++i)
-                desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
+        // if (isAtSingularity)
+        //     for (int i = 6; i < 9; ++i)
+        //         desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
 
         currentMotorPosition = currentJointAngles.toMotorPosition();
         FK_out = FK(currentMotorPosition.toJointAngle());
