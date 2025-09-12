@@ -598,7 +598,6 @@ void system_run()
         0);
 
     JointAngle IKOut;
-    // bool fullIK_out = IK(newIKCoor, devOrientation, &IKOut);
     IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &IKOut);
 
     currentPosition = IKOut.toMotorPosition();
@@ -626,73 +625,60 @@ void system_run()
         globalVelocity,
         globalVelocity;
 
-    velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut, 5);
-
-    // velocities = velocities.cwiseMax(5);
+    velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut, 6);
 
     motor_cmd[1] = Moteus::PositionMode::Command();
     motor_cmd[1].position = currentPosition.pos2;
-    motor_cmd[1].velocity = 0.0;
+    motor_cmd[1].velocity = NaN;
     motor_cmd[1].maximum_torque = NaN;
     motor_cmd[1].velocity_limit = abs(velocities(1));
-    // motor_cmd[1].accel_limit = 20;
     lowerJointMotor.SetPosition(motor_cmd[1], &motor_position_fmt, &motor_query_fmt);
 
     motor_cmd[2] = Moteus::PositionMode::Command();
     motor_cmd[2].position = currentPosition.pos3;
-    motor_cmd[2].velocity = 0.0;
+    motor_cmd[2].velocity = NaN;
     motor_cmd[2].maximum_torque = NaN;
     motor_cmd[2].velocity_limit = abs(velocities(2));
     ;
-    // motor_cmd[2].accel_limit = 20;
     upperJointMotor.SetPosition(motor_cmd[2], &motor_position_fmt, &motor_query_fmt);
 
     motor_cmd[3] = Moteus::PositionMode::Command();
     motor_cmd[3].position = currentPosition.pos4;
-    motor_cmd[3].velocity = 0.0; // abs(velocities(3));
+    motor_cmd[3].velocity = NaN; // abs(velocities(3));
     motor_cmd[3].maximum_torque = NaN;
     motor_cmd[3].velocity_limit = abs(velocities(3));
-    // motor_cmd[3].accel_limit = 20;
     wristBaseJointMotor.SetPosition(motor_cmd[3], &motor_position_fmt, &motor_query_fmt);
 
     motor_cmd[4] = Moteus::PositionMode::Command();
     motor_cmd[4].position = currentPosition.pos5;
-    motor_cmd[4].velocity = 0.0;
+    motor_cmd[4].velocity = NaN;
     motor_cmd[4].maximum_torque = NaN;
     motor_cmd[4].velocity_limit = abs(velocities(4));
-    // motor_cmd[4].accel_limit = 20;
     wristLowerJointMotor.SetPosition(motor_cmd[4], &motor_position_fmt, &motor_query_fmt);
 
     motor_cmd[5] = Moteus::PositionMode::Command();
     motor_cmd[5].position = currentPosition.pos6;
-    motor_cmd[5].velocity = 0.0;
+    motor_cmd[5].velocity = NaN;
     motor_cmd[5].maximum_torque = NaN;
     motor_cmd[5].velocity_limit = abs(velocities(5));
-    // motor_cmd[5].accel_limit = 20;
     wristUpperJointMotor.SetPosition(motor_cmd[5], &motor_position_fmt, &motor_query_fmt);
-
-    // velocities = extractJointRelation(J, v);
-    // velocities /= 2 * M_PI; // devide by 2*M_PIU for rev/sec
-    // velocities *= 5;
-
-    // velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut);
 
     Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f │ t0: %1.3f t1: %1.3f t2: %1.3f t3: %1.3f t4: %1.3f t5: %1.3f | phi:% 1.3f theta:% 1.3f psi:% 1.3f | %s | ∞: %d \r\n",
                   FK_coor.x,
                   FK_coor.y,
                   FK_coor.z,
-                  deg(IKOut.theta1),
-                  deg(IKOut.theta2),
-                  deg(IKOut.theta3),
-                  deg(IKOut.theta4),
-                  deg(IKOut.theta5),
-                  deg(IKOut.theta6),
-                  // velocities(0),
-                  // velocities(1),
-                  // velocities(2),
-                  // velocities(3),
-                  // velocities(4),
-                  // velocities(5),
+                  // deg(IKOut.theta1),
+                  // deg(IKOut.theta2),
+                  // deg(IKOut.theta3),
+                  // deg(IKOut.theta4),
+                  // deg(IKOut.theta5),
+                  // deg(IKOut.theta6),
+                  velocities(0),
+                  velocities(1),
+                  velocities(2),
+                  velocities(3),
+                  velocities(4),
+                  velocities(5),
                   deg(devOrientation.phi),
                   deg(devOrientation.theta),
                   deg(devOrientation.psi),
