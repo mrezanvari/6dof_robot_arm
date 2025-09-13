@@ -174,6 +174,18 @@ struct JointAngle
                                                               theta6(theta6) {}
 
     MotorPosition toMotorPosition();
+
+    JointAngle &operator=(const JointAngle &other)
+    {
+        theta1 = other.theta1;
+        theta2 = other.theta2;
+        theta3 = other.theta3;
+        theta4 = other.theta4;
+        theta5 = other.theta5;
+        theta6 = other.theta6;
+
+        return *this;
+    }
 };
 
 JointAngle MotorPosition::toJointAngle()
