@@ -11,6 +11,9 @@ const double IK_a3 = 231.03;  // length of upper arm -> centre of joint 5
 
 #define sq(x) ((x) * (x)) // Sqare function instead of pow(x, 2)
 
+bool flipWristSol = false;
+JointAngle previousSolution;
+
 bool validateArmSolution(const Coor &newCoor, const IKSoutionSet &armSolutions, JointAngle *newMotorAngle, const vector<DHParams> &jointParams)
 {
   ValidationFlags flags;
@@ -204,6 +207,26 @@ void validateWristIKSolutions(IKSolution *newIKSolution, const vector<DHParams> 
   }
 }
 
+double clampAngle(double radAngle)
+{
+  return clamp(radAngle, -1.0, 1.0);
+}
+
+double normalizeAngle(double radAngle)
+{
+  // https://stackoverflow.com/questions/11498169/dealing-with-angle-wrap-in-c-code
+  while (radAngle > M_PI)
+  {
+    radAngle -= (2.0 * M_PI);
+  }
+  while (radAngle < -M_PI)
+  {
+    radAngle += (2.0 * M_PI);
+  }
+  return radAngle;
+  // return radAngle - 2.0 * M_PI * floor((radAngle + M_PI) / (2.0 * M_PI)); // this causes too maby jumps
+}
+
 IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAngle, const vector<DHParams> &jointParams = globalJointParams)
 {
   Coor localPos = newpos;
@@ -253,15 +276,57 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
       Matrix3d R30 = R03.inverse();
       Matrix3d R36 = R30 * R;
 
+      /*
+        Symbolic matrix of R36:
+
+        ⎡-sin(t₄)⋅sin(t₆) + cos(t₄)⋅cos(t₅)⋅cos(t₆)  -sin(t₄)⋅cos(t₆) - sin(t₆)⋅cos(t₄)⋅cos(t₅)  sin(t₅)⋅cos(t₄)⎤
+        ⎢                                                                                                       ⎥
+        ⎢             sin(t₅)⋅cos(t₆)                             -sin(t₅)⋅sin(t₆)                  -cos(t₅)    ⎥
+        ⎢                                                                                                       ⎥
+        ⎣sin(t₄)⋅cos(t₅)⋅cos(t₆) + sin(t₆)⋅cos(t₄)   -sin(t₄)⋅sin(t₆)⋅cos(t₅) + cos(t₄)⋅cos(t₆)  sin(t₄)⋅sin(t₅)⎦
+      */
+
+      double theta1, theta2, theta3, theta1_2, theta2_2, theta3_2;
+
       // wrist 1 solutions
-      double theta1 = atan2(R36(2, 2), R36(0, 2));
-      double theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
-      double theta3 = atan2(-R36(1, 1), R36(1, 0));
+      double t5 = normalizeAngle(acos(clampAngle(-R36(1, 2))));
+      if (sin(t5) < 0)
+        t5 = -t5;
+
+      double t4 = normalizeAngle(acos(clampAngle((R36(0, 2)) / sin(t5))));
+      if (R36(2, 2) < 0)
+        t4 = -t4;
+
+      double t6 = normalizeAngle(acos(clampAngle((R36(1, 0)) / sin(t5))));
+      if (-R36(1, 1) < 0)
+        t6 = -t6;
+
+      if ((abs(sin(t5)) <= 1e-3))
+      {
+        flipWristSol = !flipWristSol;
+        double t46 = atan2(R36(2, 0), -R36(0, 1));
+        t4 = previousSolution.theta4;
+        t6 = t46 - t4;
+      }
+
+      theta1 = t4; // atan2(R36(2, 2), R36(0, 2));
+      theta2 = t5; // atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
+      theta3 = t6; // atan2(-R36(1, 1), R36(1, 0));
 
       // wrist 2 solutions
-      double theta1_2 = atan2(-R36(2, 2), -R36(0, 2));
-      double theta2_2 = atan2(-sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
-      double theta3_2 = atan2(R36(1, 1), -R36(1, 0));
+      theta1_2 = normalizeAngle(t4 + M_PI); // atan2(-R36(2, 2), -R36(0, 2));
+      theta2_2 = normalizeAngle(-t5);       // atan2(-sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
+      theta3_2 = normalizeAngle(t6 + M_PI); // atan2(R36(1, 1), -R36(1, 0));
+
+      if (flipWristSol)
+      {
+        theta1_2 = previousSolution.theta4;
+        theta3_2 = previousSolution.theta6;
+
+        swap(theta1, theta1_2);
+        swap(theta2, theta2_2);
+        swap(theta3, theta3_2);
+      }
 
       // offset + 3 arm thetas + index of wrist solution
       newIKSolution.thetas[offset + 3 + 0] = theta1;
@@ -282,6 +347,7 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
     for (double &theta : newMotorAngle->thetas)
       theta = NAN;
 
+  previousSolution = *newMotorAngle;
   return newIKSolution;
 }
 

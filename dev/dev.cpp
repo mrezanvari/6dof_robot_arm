@@ -275,7 +275,7 @@ int main()
 
     tempAngle.theta4 = atan2(R36(2, 2), R36(0, 2));
     tempAngle.theta5 = atan2(sqrt(1 - pow(R36(1, 2), 2)), -R36(1, 2));
-    tempAngle.theta6 = atan2(-R36(2, 1), R36(2, 0));
+    tempAngle.theta6 = atan2(-R36(1, 1), R36(1, 0));
 
     printf("IK Out ->          θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3), deg(tempAngle.theta4), deg(tempAngle.theta5), deg(tempAngle.theta6));
     FK_out = FK(tempAngle);
@@ -433,7 +433,6 @@ int main()
     printf("Solution validation: %s\r\n", objToBin(&iksol.validationFlags.bits, 1).c_str());
 
     drawSectionLine("6 DoF IK with offset following textbook"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-
     IK(newIKCoor, newOrientation, &IKOut);
     FK_out = FK(IKOut);
     printf("FK Coor->      x=% .3f y=% .3f z=% .3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
@@ -718,7 +717,18 @@ int main()
         JointAngle desiredJointAngles;
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
-        // if (isAtSingularity)
+        // double insideTerm = (1 - sq(st));
+        // double sqrtTerm = sqrt(insideTerm);
+        // stsingular = (abs(sqrtTerm) <= 1e-2) * 20;
+        // if (st <= 1)
+        // {
+        //     for (int i = 6; i < 9; ++i)
+        //         desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
+
+        //     desiredJointAngles.thetas[3] = currentJointAngles.theta4;
+        // }
+
+        // if (deg(devOrientation.theta) >= 120)
         //     for (int i = 6; i < 9; ++i)
         //         desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
 
@@ -726,13 +736,14 @@ int main()
         FK_out = FK(currentMotorPosition.toJointAngle());
         FK_coor = FK_out.first;
         J = createJacobianMatrix(FK_out.second);
-        auto singular_out = IsSingular(J);
+        auto singular_out = IsSingular(J, 1e-4);
         isAtSingularity = singular_out.first;
 
         FullPivLU<MatrixXd> fivLU(J);
         int rank = fivLU.rank();
 
-        VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 5); // gain really high because the delta is too low
+        VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 10); // gain really high because the delta is too low
+        // jointVelocities = jointVelocities.cwiseMin(2);
 
         p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} | phi:{: .3f} theta:{: .3f} psi:{: .3f} | {} | J11 det:{: .5f} J22 det:{: .5f} | rank:{} |∞: {:d}\r\n",
                                  FK_coor.y,
