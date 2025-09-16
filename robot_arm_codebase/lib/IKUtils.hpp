@@ -256,12 +256,12 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
       // wrist 1 solutions
       double theta1 = atan2(R36(2, 2), R36(0, 2));
       double theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
-      double theta3 = atan2(-R36(2, 1), R36(2, 0));
+      double theta3 = atan2(-R36(1, 1), R36(1, 0));
 
       // wrist 2 solutions
       double theta1_2 = atan2(-R36(2, 2), -R36(0, 2));
       double theta2_2 = atan2(-sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
-      double theta3_2 = atan2(R36(2, 1), -R36(2, 0));
+      double theta3_2 = atan2(R36(1, 1), -R36(1, 0));
 
       // offset + 3 arm thetas + index of wrist solution
       newIKSolution.thetas[offset + 3 + 0] = theta1;
