@@ -8,6 +8,7 @@
 using namespace Eigen;
 using Eigen::MatrixXd;
 
+VectorXd globalPreviousVelocities(6);
 pair<bool, pair<double, double>> IsSingular(MatrixXd &jacobian, double epsilon = 1e-2)
 {
   MatrixXd J11(3, 3);
@@ -68,7 +69,7 @@ VectorXd extractJointRelation(const MatrixXd &J, const VectorXd &v)
   return J_inv * v;
 }
 
-VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &desiredAngles, const double gain = 1, const double singularitySpeed = 0)
+VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &desiredAngles, const double gain = 1, VectorXd &previousVelocities = globalPreviousVelocities)
 {
   auto currentFK_out = FK(currentAngles);
   auto desiredFK_out = FK(desiredAngles);
@@ -91,14 +92,13 @@ VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &d
   v.head(3) = errorPos.toVector3d();
   v.tail(3) = errorRotatationVector;
 
-  VectorXd newVelocities{{singularitySpeed, singularitySpeed, singularitySpeed, singularitySpeed, singularitySpeed, singularitySpeed}};
-
   if (!IsSingular(J).first)
   {
-    newVelocities = extractJointRelation(J, v);
-    newVelocities /= 2 * M_PI;
-    newVelocities *= gain;
+    previousVelocities = extractJointRelation(J, v);
+    previousVelocities /= 2 * M_PI;
+    previousVelocities *= gain;
   }
 
-  return newVelocities;
+  globalPreviousVelocities = previousVelocities;
+  return previousVelocities;
 }
