@@ -616,50 +616,7 @@ void system_run()
     auto singular_out = IsSingular(J);
     bool isAtSingularity = singular_out.first;
 
-    VectorXd velocities(6);
-    velocities << globalVelocity,
-        globalVelocity,
-        globalVelocity,
-        globalVelocity,
-        globalVelocity,
-        globalVelocity;
-
-    velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut, 6);
-
-    // motor_cmd[1] = Moteus::PositionMode::Command();
-    // motor_cmd[1].position = currentPosition.pos2;
-    // motor_cmd[1].velocity = NaN;
-    // motor_cmd[1].maximum_torque = NaN;
-    // motor_cmd[1].velocity_limit = abs(velocities(1));
-    // lowerJointMotor.SetPosition(motor_cmd[1], &motor_position_fmt, &motor_query_fmt);
-
-    // motor_cmd[2] = Moteus::PositionMode::Command();
-    // motor_cmd[2].position = currentPosition.pos3;
-    // motor_cmd[2].velocity = NaN;
-    // motor_cmd[2].maximum_torque = NaN;
-    // motor_cmd[2].velocity_limit = abs(velocities(2));
-    // upperJointMotor.SetPosition(motor_cmd[2], &motor_position_fmt, &motor_query_fmt);
-
-    // motor_cmd[3] = Moteus::PositionMode::Command();
-    // motor_cmd[3].position = currentPosition.pos4;
-    // motor_cmd[3].velocity = NaN; // abs(velocities(3));
-    // motor_cmd[3].maximum_torque = NaN;
-    // motor_cmd[3].velocity_limit = abs(velocities(3));
-    // wristBaseJointMotor.SetPosition(motor_cmd[3], &motor_position_fmt, &motor_query_fmt);
-
-    // motor_cmd[4] = Moteus::PositionMode::Command();
-    // motor_cmd[4].position = currentPosition.pos5;
-    // motor_cmd[4].velocity = NaN;
-    // motor_cmd[4].maximum_torque = NaN;
-    // motor_cmd[4].velocity_limit = abs(velocities(4));
-    // wristLowerJointMotor.SetPosition(motor_cmd[4], &motor_position_fmt, &motor_query_fmt);
-
-    // motor_cmd[5] = Moteus::PositionMode::Command();
-    // motor_cmd[5].position = currentPosition.pos6;
-    // motor_cmd[5].velocity = NaN;
-    // motor_cmd[5].maximum_torque = NaN;
-    // motor_cmd[5].velocity_limit = abs(velocities(5));
-    // wristUpperJointMotor.SetPosition(motor_cmd[5], &motor_position_fmt, &motor_query_fmt);
+    VectorXd velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut, 6);
 
     baseJointMotor.SetBrake();
     setMotorPositionVelocity(lowerJointMotor, currentPosition.pos2, velocities(1));
