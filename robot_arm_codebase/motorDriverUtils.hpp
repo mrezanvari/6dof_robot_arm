@@ -137,3 +137,13 @@ void lockMotor(Moteus &motor, bool useDiagnoseProtocol = true)
 
   motor.SetPosition(motor_cmd);
 }
+
+void setMotorPositionVelocity(Moteus &motor, double &position, double &velocity)
+{
+  Moteus::PositionMode::Command motor_cmd;
+  motor_cmd.velocity = NaN;
+  motor_cmd.maximum_torque = NaN;
+  motor_cmd.position = position;
+  motor_cmd.velocity_limit = abs(velocity);
+  motor.SetPosition(motor_cmd, &motor_position_fmt, &motor_query_fmt);
+}

@@ -601,7 +601,6 @@ void system_run()
     IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &IKOut);
 
     currentPosition = IKOut.toMotorPosition();
-    baseJointMotor.SetBrake();
 
     currentMotorPosition = MotorPosition(
         baseJointMotor.last_result().values.position,
@@ -627,62 +626,68 @@ void system_run()
 
     velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut, 6);
 
-    motor_cmd[1] = Moteus::PositionMode::Command();
-    motor_cmd[1].position = currentPosition.pos2;
-    motor_cmd[1].velocity = NaN;
-    motor_cmd[1].maximum_torque = NaN;
-    motor_cmd[1].velocity_limit = abs(velocities(1));
-    lowerJointMotor.SetPosition(motor_cmd[1], &motor_position_fmt, &motor_query_fmt);
+    // motor_cmd[1] = Moteus::PositionMode::Command();
+    // motor_cmd[1].position = currentPosition.pos2;
+    // motor_cmd[1].velocity = NaN;
+    // motor_cmd[1].maximum_torque = NaN;
+    // motor_cmd[1].velocity_limit = abs(velocities(1));
+    // lowerJointMotor.SetPosition(motor_cmd[1], &motor_position_fmt, &motor_query_fmt);
 
-    motor_cmd[2] = Moteus::PositionMode::Command();
-    motor_cmd[2].position = currentPosition.pos3;
-    motor_cmd[2].velocity = NaN;
-    motor_cmd[2].maximum_torque = NaN;
-    motor_cmd[2].velocity_limit = abs(velocities(2));
-    ;
-    upperJointMotor.SetPosition(motor_cmd[2], &motor_position_fmt, &motor_query_fmt);
+    // motor_cmd[2] = Moteus::PositionMode::Command();
+    // motor_cmd[2].position = currentPosition.pos3;
+    // motor_cmd[2].velocity = NaN;
+    // motor_cmd[2].maximum_torque = NaN;
+    // motor_cmd[2].velocity_limit = abs(velocities(2));
+    // upperJointMotor.SetPosition(motor_cmd[2], &motor_position_fmt, &motor_query_fmt);
 
-    motor_cmd[3] = Moteus::PositionMode::Command();
-    motor_cmd[3].position = currentPosition.pos4;
-    motor_cmd[3].velocity = NaN; // abs(velocities(3));
-    motor_cmd[3].maximum_torque = NaN;
-    motor_cmd[3].velocity_limit = abs(velocities(3));
-    wristBaseJointMotor.SetPosition(motor_cmd[3], &motor_position_fmt, &motor_query_fmt);
+    // motor_cmd[3] = Moteus::PositionMode::Command();
+    // motor_cmd[3].position = currentPosition.pos4;
+    // motor_cmd[3].velocity = NaN; // abs(velocities(3));
+    // motor_cmd[3].maximum_torque = NaN;
+    // motor_cmd[3].velocity_limit = abs(velocities(3));
+    // wristBaseJointMotor.SetPosition(motor_cmd[3], &motor_position_fmt, &motor_query_fmt);
 
-    motor_cmd[4] = Moteus::PositionMode::Command();
-    motor_cmd[4].position = currentPosition.pos5;
-    motor_cmd[4].velocity = NaN;
-    motor_cmd[4].maximum_torque = NaN;
-    motor_cmd[4].velocity_limit = abs(velocities(4));
-    wristLowerJointMotor.SetPosition(motor_cmd[4], &motor_position_fmt, &motor_query_fmt);
+    // motor_cmd[4] = Moteus::PositionMode::Command();
+    // motor_cmd[4].position = currentPosition.pos5;
+    // motor_cmd[4].velocity = NaN;
+    // motor_cmd[4].maximum_torque = NaN;
+    // motor_cmd[4].velocity_limit = abs(velocities(4));
+    // wristLowerJointMotor.SetPosition(motor_cmd[4], &motor_position_fmt, &motor_query_fmt);
 
-    motor_cmd[5] = Moteus::PositionMode::Command();
-    motor_cmd[5].position = currentPosition.pos6;
-    motor_cmd[5].velocity = NaN;
-    motor_cmd[5].maximum_torque = NaN;
-    motor_cmd[5].velocity_limit = abs(velocities(5));
-    wristUpperJointMotor.SetPosition(motor_cmd[5], &motor_position_fmt, &motor_query_fmt);
+    // motor_cmd[5] = Moteus::PositionMode::Command();
+    // motor_cmd[5].position = currentPosition.pos6;
+    // motor_cmd[5].velocity = NaN;
+    // motor_cmd[5].maximum_torque = NaN;
+    // motor_cmd[5].velocity_limit = abs(velocities(5));
+    // wristUpperJointMotor.SetPosition(motor_cmd[5], &motor_position_fmt, &motor_query_fmt);
+
+    baseJointMotor.SetBrake();
+    setMotorPositionVelocity(lowerJointMotor, currentPosition.pos2, velocities(1));
+    setMotorPositionVelocity(upperJointMotor, currentPosition.pos3, velocities(2));
+    setMotorPositionVelocity(wristBaseJointMotor, currentPosition.pos4, velocities(3));
+    setMotorPositionVelocity(wristLowerJointMotor, currentPosition.pos5, velocities(4));
+    setMotorPositionVelocity(wristUpperJointMotor, currentPosition.pos6, velocities(5));
 
     Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f │ t0: %1.3f t1: %1.3f t2: %1.3f t3: %1.3f t4: %1.3f t5: %1.3f | phi:% 1.3f theta:% 1.3f psi:% 1.3f | %s | ∞: %d \r\n",
                   FK_coor.x,
                   FK_coor.y,
                   FK_coor.z,
-                  // deg(IKOut.theta1),
-                  // deg(IKOut.theta2),
-                  // deg(IKOut.theta3),
-                  // deg(IKOut.theta4),
-                  // deg(IKOut.theta5),
-                  // deg(IKOut.theta6),
-                  velocities(0),
-                  velocities(1),
-                  velocities(2),
-                  velocities(3),
-                  velocities(4),
-                  velocities(5),
+                  deg(IKOut.theta1),
+                  deg(IKOut.theta2),
+                  deg(IKOut.theta3),
+                  deg(IKOut.theta4),
+                  deg(IKOut.theta5),
+                  deg(IKOut.theta6),
+                  // velocities(0),
+                  // velocities(1),
+                  // velocities(2),
+                  // velocities(3),
+                  // velocities(4),
+                  // velocities(5),
                   deg(devOrientation.phi),
                   deg(devOrientation.theta),
                   deg(devOrientation.psi),
-                  "nan", // bitset<8>(fullIKSolution.validationFlags.bits).to_string().c_str(),
+                  bitset<8>(fullIKSolution.validationFlags.bits).to_string().c_str(),
                   isAtSingularity);
 
     delay(updteInterval);

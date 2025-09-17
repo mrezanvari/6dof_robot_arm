@@ -14,6 +14,26 @@ const double IK_a3 = 231.03;  // length of upper arm -> centre of joint 5
 bool flipWristSol = false;
 JointAngle previousSolution;
 
+double clampAngle(double radAngle)
+{
+  return clamp(radAngle, -1.0, 1.0);
+}
+
+double normalizeAngle(double radAngle)
+{
+  // https://stackoverflow.com/questions/11498169/dealing-with-angle-wrap-in-c-code
+  while (radAngle > M_PI)
+  {
+    radAngle -= (2.0 * M_PI);
+  }
+  while (radAngle < -M_PI)
+  {
+    radAngle += (2.0 * M_PI);
+  }
+  return radAngle;
+  // return radAngle - 2.0 * M_PI * floor((radAngle + M_PI) / (2.0 * M_PI)); // this causes too many jumps
+}
+
 bool validateArmSolution(const Coor &newCoor, const IKSoutionSet &armSolutions, JointAngle *newMotorAngle, const vector<DHParams> &jointParams)
 {
   ValidationFlags flags;
@@ -144,14 +164,14 @@ void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHP
     return;
   }
 
-  double a1 = jointParams[0].d; // length of lower arm -> book uses DH, we use MDH so here we use d rather than a
+  double d1 = jointParams[0].d; // length of lower arm -> book uses DH, we use MDH so here we use d rather than a
   double a2 = jointParams[2].a; // length of lower arm
   double a3 = jointParams[3].d; // length of upper arm
   double d = jointParams[1].d;  // shoulder offset -> from the second joint DH d parameter
 
   double phi = atan2(localPos.y, localPos.x);
   double r2 = sq(localPos.y) + sq(localPos.x) - sq(d);       // r squared -> from equation 5.24 and 5.26
-  double s = (localPos.z - a1);                              // from equation 5.24 and 5.26
+  double s = (localPos.z - d1);                              // from equation 5.24 and 5.26
   double D = (r2 + sq(s) - sq(a2) - sq(a3)) / (2 * a2 * a3); // from equation 5.24
 
   double r2_sqrt = sqrt(r2);
@@ -205,26 +225,6 @@ void validateWristIKSolutions(IKSolution *newIKSolution, const vector<DHParams> 
                                                  newIKSolution->thetas[i] > jointParams[i - offset + 3].limits.max))
                                                << currentSolution); // shift invalid solution to position in byte then invert and AND with validation flags
   }
-}
-
-double clampAngle(double radAngle)
-{
-  return clamp(radAngle, -1.0, 1.0);
-}
-
-double normalizeAngle(double radAngle)
-{
-  // https://stackoverflow.com/questions/11498169/dealing-with-angle-wrap-in-c-code
-  while (radAngle > M_PI)
-  {
-    radAngle -= (2.0 * M_PI);
-  }
-  while (radAngle < -M_PI)
-  {
-    radAngle += (2.0 * M_PI);
-  }
-  return radAngle;
-  // return radAngle - 2.0 * M_PI * floor((radAngle + M_PI) / (2.0 * M_PI)); // this causes too maby jumps
 }
 
 IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAngle, const vector<DHParams> &jointParams = globalJointParams)
@@ -309,14 +309,14 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
         t6 = t46 - t4;
       }
 
-      theta1 = t4; // atan2(R36(2, 2), R36(0, 2));
-      theta2 = t5; // atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
-      theta3 = t6; // atan2(-R36(1, 1), R36(1, 0));
+      theta1 = t4;
+      theta2 = t5;
+      theta3 = t6;
 
       // wrist 2 solutions
-      theta1_2 = normalizeAngle(t4 + M_PI); // atan2(-R36(2, 2), -R36(0, 2));
-      theta2_2 = normalizeAngle(-t5);       // atan2(-sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
-      theta3_2 = normalizeAngle(t6 + M_PI); // atan2(R36(1, 1), -R36(1, 0));
+      theta1_2 = normalizeAngle(t4 + M_PI);
+      theta2_2 = normalizeAngle(-t5);
+      theta3_2 = normalizeAngle(t6 + M_PI);
 
       if (flipWristSol)
       {
