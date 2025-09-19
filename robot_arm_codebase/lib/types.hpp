@@ -123,6 +123,15 @@ struct Coor
         }
         return Coor(x - other.x, y - other.y, z - other.z);
     }
+
+    bool isEqualOrClose(const Coor &other, double threshold = 1e-3)
+    {
+        return (abs(other.x - x) <= threshold &&
+                abs(other.y - y) <= threshold &&
+                abs(other.z - z) <= threshold &&
+                axisType == other.axisType &&
+                coorScale == other.coorScale);
+    }
 };
 
 struct MotorPosition
