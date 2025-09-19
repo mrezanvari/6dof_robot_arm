@@ -616,9 +616,9 @@ void system_run()
     auto singular_out = IsSingular(J);
     bool isAtSingularity = singular_out.first;
 
-    VectorXd velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut, 6);
+    VectorXd velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut, 8);
 
-    baseJointMotor.SetBrake();
+    setMotorPositionVelocity(baseJointMotor, currentPosition.pos1, velocities(0));
     setMotorPositionVelocity(lowerJointMotor, currentPosition.pos2, velocities(1));
     setMotorPositionVelocity(upperJointMotor, currentPosition.pos3, velocities(2));
     setMotorPositionVelocity(wristBaseJointMotor, currentPosition.pos4, velocities(3));
