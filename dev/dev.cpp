@@ -658,6 +658,50 @@ int main()
 
     r_logger.close();
     theta = saveTheta;
+    drawSectionLine("Pick Best solution test"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    newIKCoor = Coor(
+        410,
+        215,
+        0);
+    Orientation newIKOrientation(
+        rad(90),
+        rad(90),
+        0);
+
+    JointAngle thisNewJoint;
+    JointAngle lastStableJoint;
+
+    IKSolution newSolution = solveFullIK(newIKCoor, newIKOrientation, &thisNewJoint);
+    offset = 0;
+    printf("new IK right up Out ->      ");
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
+    cout << endl;
+
+    printf("new IK right down Out ->    ");
+    offset = 9;
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
+    cout << endl
+         << endl;
+
+    printf("new IK left up Out ->       ");
+    offset = 18;
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
+    cout << endl;
+
+    printf("new IK left down Out ->     ");
+    offset = 27;
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
+    cout << endl
+         << endl;
+    printf("Solutions: %s\r\n", bitset<8>(newSolution.validationFlags.bits).to_string().c_str());
+    JointAngle best;
+    pickBestSolution(newSolution, lastStableJoint, &best);
+
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     cout << "To begin simulation, type 'yes':" << endl;
@@ -717,16 +761,7 @@ int main()
         JointAngle desiredJointAngles;
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
-        // double insideTerm = (1 - sq(st));
-        // double sqrtTerm = sqrt(insideTerm);
-        // stsingular = (abs(sqrtTerm) <= 1e-2) * 20;
-        // if (st <= 1)
-        // {
-        //     for (int i = 6; i < 9; ++i)
-        //         desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
-
-        //     desiredJointAngles.thetas[3] = currentJointAngles.theta4;
-        // }
+        double delta = pickBestSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
 
         // if (deg(devOrientation.theta) >= 120)
         //     for (int i = 6; i < 9; ++i)
@@ -742,12 +777,10 @@ int main()
         FullPivLU<MatrixXd> fivLU(J);
         int rank = fivLU.rank();
 
-        // currentJointAngles.theta1 = rad(20);
-
         VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 10); // gain really high because the delta is too low
         // jointVelocities = jointVelocities.cwiseMin(2);
 
-        p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} │ J11 det:{: .5f} J22 det:{: .5f} │ rank:{} │ ∞: {:d}\r\n",
+        p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} │ J11 det:{: .5f} J22 det:{: .5f} │ rank:{} │ ∞: {:d} │ {}\r\n",
                                  FK_coor.y,
                                  FK_coor.z,
                                  FK_coor.x,
@@ -764,7 +797,28 @@ int main()
                                  singular_out.second.first,
                                  singular_out.second.second,
                                  rank,
-                                 isAtSingularity);
+                                 isAtSingularity,
+                                 delta);
+
+        // p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} │ J11 det:{: .5f} J22 det:{: .5f} │ rank:{} │ ∞: {:d} │ {}\r\n",
+        //                          FK_coor.y,
+        //                          FK_coor.z,
+        //                          FK_coor.x,
+        //                          deg(fullIKSolution.right.up.theta1),
+        //                          deg(fullIKSolution.right.up.theta2),
+        //                          deg(fullIKSolution.right.up.theta3),
+        //                          deg(fullIKSolution.right.up.wrist2.theta1),
+        //                          deg(fullIKSolution.right.up.wrist2.theta2),
+        //                          deg(fullIKSolution.right.up.wrist2.theta3),
+        //                          deg(devOrientation.phi),
+        //                          deg(devOrientation.theta),
+        //                          deg(devOrientation.psi),
+        //                          bitset<8>(fullIKSolution.validationFlags.bits).to_string(),
+        //                          singular_out.second.first,
+        //                          singular_out.second.second,
+        //                          rank,
+        //                          isAtSingularity,
+        //                          delta);
 
         v_logBuffer = "";
 
@@ -780,6 +834,9 @@ int main()
         v_logger << v_logBuffer;
 
         currentJointAngles = desiredJointAngles;
+
+        // if (deg(currentJointAngles.theta5) <= 1)
+        //     break;
     }
     cout << "Output truncated... -> See \"sim_log.log\"" << endl;
     p_logger.close();

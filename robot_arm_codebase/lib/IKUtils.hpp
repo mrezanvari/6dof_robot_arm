@@ -119,9 +119,45 @@ bool IK_Arm(const Coor &newpos, JointAngle *newMotorAngle, const vector<DHParams
   return validateArmSolution(localPos, armSolutions, newMotorAngle, jointParams);
 }
 
-JointAngle pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStableSolution)
+double pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStableSolution, JointAngle *bestSolution)
 {
-  return JointAngle();
+  // This function may not produce the expected result please avoid using.
+  return 0;
+  int offsetMultiplier = 1; // value will be [1, 2, 4, 5, 7, 8, 10, 11]
+
+  double delta = INT_MAX;
+  int chosen = 0;
+
+  for (int currentSolution = 0; currentSolution < 8; ++currentSolution)
+  {
+    int offset = offsetMultiplier * 3;
+    offsetMultiplier += ((currentSolution + 1) % 2 == 0) ? 2 : 1; // skip 3, 6, 9
+
+    if (!(newIKSolution.validationFlags.bits & (1 << currentSolution)))
+      continue;
+
+    JointAngle thisSolution;
+    int armOffset = floor(currentSolution / 2.0);
+
+    for (int i = 0; i < 3; ++i)
+      thisSolution.thetas[i] = newIKSolution.thetas[armOffset + i];
+
+    for (int i = 0; i < 3; ++i)
+      thisSolution.thetas[i + 3] = newIKSolution.thetas[offset + i];
+
+    double thisDelta = 0;
+    for (int i = 0; i < 6; ++i)
+      thisDelta += abs(lastStableSolution.thetas[i] - thisSolution.thetas[i]);
+
+    if (thisDelta < delta)
+    {
+      *bestSolution = thisSolution;
+      chosen = currentSolution;
+      delta = thisDelta;
+    }
+  }
+
+  return chosen;
 }
 
 void validate3DoFIKSolutions(IKSolution *newIKSolution, const vector<DHParams> &jointParams = globalJointParams)
@@ -317,6 +353,14 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
       theta1_2 = normalizeAngle(t4 + M_PI);
       theta2_2 = normalizeAngle(-t5);
       theta3_2 = normalizeAngle(t6 + M_PI);
+
+      // double theta1 = atan2(R36(2, 2), R36(0, 2));
+      // double theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
+      // double theta3 = atan2(-R36(1, 1), R36(1, 0));
+
+      // double theta1_2 = atan2(-R36(2, 2), -R36(0, 2));
+      // double theta2_2 = atan2(-sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
+      // double theta3_2 = atan2(R36(1, 1), -R36(1, 0));
 
       if (flipWristSol)
       {
