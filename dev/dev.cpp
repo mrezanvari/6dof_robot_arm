@@ -750,10 +750,10 @@ int main()
     int loopUpperBound = 2000;
     int loopCount = 0;
     fstream p_logger;
-    p_logger.open("sim_pos.log", fstream::out);
+    p_logger.open("sim_pos1.log", fstream::out);
 
     fstream v_logger;
-    v_logger.open("sim_vel.log", fstream::out);
+    v_logger.open("sim_vel1.log", fstream::out);
     JointAngle currentJointAngles;
 
     solveFullIK(newIKCoor, devOrientation, &currentJointAngles);
@@ -896,10 +896,10 @@ int main()
         -360);
 
     fstream p_logger_line;
-    p_logger_line.open("sim_pos_line.log", fstream::out);
+    p_logger_line.open("sim_pos2.log", fstream::out);
 
     fstream v_logger_line;
-    v_logger_line.open("sim_vel_line.log", fstream::out);
+    v_logger_line.open("sim_vel2.log", fstream::out);
 
     string p_logBuffer_line;
     string v_logBuffer_line;
@@ -965,8 +965,6 @@ int main()
         p_logger_line << p_logBuffer_line;
         v_logger_line << v_logBuffer_line;
 
-        MotorPosition targetMotorPosition = targetJointAngles.toMotorPosition();
-
         currentMotorPosition.pos1 += jointVelocities(0);
         currentMotorPosition.pos2 += jointVelocities(1);
         currentMotorPosition.pos3 += jointVelocities(2);
@@ -974,8 +972,122 @@ int main()
         currentMotorPosition.pos5 += jointVelocities(4);
         currentMotorPosition.pos6 += jointVelocities(5);
 
-        // if (FK_coor.toYUp().isEqualOrClose(targetPosition))
-        //     isAtTarget = true;
+        if (FK_coor.toYUp().isEqualOrClose(targetPosition))
+            isAtTarget = true;
+    }
+    cout << "Output truncated... -> See \"sim_log.log\"" << endl;
+    p_logger_line.close();
+    v_logger_line.close();
+
+    drawSectionLine("Continious Motion Simulation 3"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    cout << "To begin second simulation, type 'yes':" << endl;
+    usrInput = "";
+    cin >> usrInput;
+    if (!(usrInput == "yes" || usrInput == "y"))
+        return 0;
+
+    printf("\r\n\r\n");
+
+    currentMotorPosition = MotorPosition();
+    globalVelocity = 0.7;
+    startOrientation = Orientation(
+        rad(90),
+        rad(90),
+        0);
+
+    startPosition = Coor(
+        410,
+        215,
+        0);
+
+    targetOrientation = Orientation(
+        rad(90),
+        rad(90),
+        0);
+
+    targetPosition = Coor(
+        410,
+        215,
+        0);
+
+    p_logger_line.open("sim_pos3.log", fstream::out);
+    v_logger_line.open("sim_vel3.log", fstream::out);
+
+    currentPosIK = solveFullIK(startPosition, startOrientation, &startJointAngles);
+    currentMotorPosition = startJointAngles.toMotorPosition();
+
+    targetIK = solveFullIK(targetPosition, targetOrientation, &targetJointAngles);
+
+    targetJointAngles = startJointAngles;
+
+    offset = 0;
+    printf("current IK right up Out ->      ");
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(currentPosIK.thetas[i]));
+    cout << endl;
+    printf("new IK right up Out ->          ");
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(targetIK.thetas[i]));
+    cout << endl;
+
+    printf("Chose solution: %d\r\n", outBest);
+
+    loopCount = 0;
+    loopUpperBound = 6000;
+
+    moveDir = 1;
+
+    while (++loopCount < loopUpperBound)
+    {
+        startOrientation.theta += rad((moveDir * 0.1));
+        if (startOrientation.theta > rad(180))
+            moveDir = -1;
+        else if (startOrientation.theta <= rad(60))
+            moveDir = 1;
+
+        solveFullIK(targetPosition, startOrientation, &targetJointAngles);
+
+        currentJointAngles = currentMotorPosition.toJointAngle();
+        FK_out = FK(currentJointAngles);
+        FK_coor = FK_out.first;
+        J = createJacobianMatrix(FK_out.second);
+        VectorXd jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, 0.2); // gain really high because the delta is too low
+
+        p_logBuffer_line = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} \r\n",
+                                      FK_coor.y,
+                                      FK_coor.z,
+                                      FK_coor.x,
+                                      deg(currentJointAngles.theta1),
+                                      deg(currentJointAngles.theta2),
+                                      deg(currentJointAngles.theta3),
+                                      deg(currentJointAngles.theta4),
+                                      deg(currentJointAngles.theta5),
+                                      deg(currentJointAngles.theta6),
+                                      deg(startOrientation.phi),
+                                      deg(startOrientation.theta),
+                                      deg(startOrientation.psi),
+                                      bitset<8>(targetIK.validationFlags.bits).to_string());
+
+        v_logBuffer_line = "";
+
+        for (int i = 0; i < jointVelocities.size(); ++i)
+            v_logBuffer_line += dyna_print("v{}:{:.10f}\t", i, jointVelocities(i));
+
+        v_logBuffer_line += "\r\n";
+
+        if (loopCount < 10)
+            cout << p_logBuffer_line;
+
+        p_logger_line << p_logBuffer_line;
+        v_logger_line << v_logBuffer_line;
+
+        currentMotorPosition.pos1 += jointVelocities(0);
+        currentMotorPosition.pos2 += jointVelocities(1);
+        currentMotorPosition.pos3 += jointVelocities(2);
+        currentMotorPosition.pos4 += jointVelocities(3);
+        currentMotorPosition.pos5 += jointVelocities(4);
+        currentMotorPosition.pos6 += jointVelocities(5);
     }
     cout << "Output truncated... -> See \"sim_log.log\"" << endl;
     p_logger_line.close();
