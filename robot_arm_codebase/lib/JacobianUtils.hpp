@@ -64,12 +64,12 @@ VectorXd extractJointRelation(const MatrixXd &J, const VectorXd &v)
     function. This is why it is seperated into a function, by itself
     it deserves development down the line.
   */
-  // MatrixXd J_inv = J.completeOrthogonalDecomposition().pseudoInverse();
-  MatrixXd J_inv = J.inverse();
+  MatrixXd J_inv = J.completeOrthogonalDecomposition().pseudoInverse();
+  // MatrixXd J_inv = J.inverse();
   return J_inv * v;
 }
 
-VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &desiredAngles, const double gain = 1, VectorXd &previousVelocities = globalPreviousVelocities)
+VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &desiredAngles, const double gain = 1)
 {
   auto currentFK_out = FK(currentAngles);
   auto desiredFK_out = FK(desiredAngles);
@@ -92,13 +92,9 @@ VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &d
   v.head(3) = errorPos.toVector3d();
   v.tail(3) = errorRotatationVector;
 
-  if (!IsSingular(J).first)
-  {
-    previousVelocities = extractJointRelation(J, v);
-    previousVelocities /= 2 * M_PI;
-    previousVelocities *= gain;
-  }
+  VectorXd newVelocities = extractJointRelation(J, v);
+  newVelocities /= 2 * M_PI;
+  newVelocities *= gain;
 
-  globalPreviousVelocities = previousVelocities;
-  return previousVelocities;
+  return newVelocities;
 }
