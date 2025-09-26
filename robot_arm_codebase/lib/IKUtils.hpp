@@ -119,14 +119,14 @@ bool IK_Arm(const Coor &newpos, JointAngle *newMotorAngle, const vector<DHParams
   return validateArmSolution(localPos, armSolutions, newMotorAngle, jointParams);
 }
 
-double pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStableSolution, JointAngle *bestSolution)
+int pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStableSolution, JointAngle *bestSolution)
 {
   // This function may not produce the expected result please avoid using.
   return 0;
   int offsetMultiplier = 1; // value will be [1, 2, 4, 5, 7, 8, 10, 11]
 
   double delta = INT_MAX;
-  int chosen = 0;
+  int chosen = -1;
 
   for (int currentSolution = 0; currentSolution < 8; ++currentSolution)
   {
@@ -148,6 +148,8 @@ double pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastS
     double thisDelta = 0;
     for (int i = 0; i < 6; ++i)
       thisDelta += abs(lastStableSolution.thetas[i] - thisSolution.thetas[i]);
+
+    printf("For solution %d delta was %f\r\n", currentSolution, thisDelta);
 
     if (thisDelta < delta)
     {
@@ -322,55 +324,13 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
         ⎣sin(t₄)⋅cos(t₅)⋅cos(t₆) + sin(t₆)⋅cos(t₄)   -sin(t₄)⋅sin(t₆)⋅cos(t₅) + cos(t₄)⋅cos(t₆)  sin(t₄)⋅sin(t₅)⎦
       */
 
-      double theta1, theta2, theta3, theta1_2, theta2_2, theta3_2;
+      double theta1 = atan2(R36(2, 2), R36(0, 2));
+      double theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
+      double theta3 = atan2(-R36(1, 1), R36(1, 0));
 
-      // wrist 1 solutions
-      double t5 = normalizeAngle(acos(clampAngle(-R36(1, 2))));
-      if (sin(t5) < 0)
-        t5 = -t5;
-
-      double t4 = normalizeAngle(acos(clampAngle((R36(0, 2)) / sin(t5))));
-      if (R36(2, 2) < 0)
-        t4 = -t4;
-
-      double t6 = normalizeAngle(acos(clampAngle((R36(1, 0)) / sin(t5))));
-      if (-R36(1, 1) < 0)
-        t6 = -t6;
-
-      if ((abs(sin(t5)) <= 1e-3))
-      {
-        flipWristSol = !flipWristSol;
-        double t46 = atan2(R36(2, 0), -R36(0, 1));
-        t4 = previousSolution.theta4;
-        t6 = t46 - t4;
-      }
-
-      theta1 = t4;
-      theta2 = t5;
-      theta3 = t6;
-
-      // wrist 2 solutions
-      theta1_2 = normalizeAngle(t4 + M_PI);
-      theta2_2 = normalizeAngle(-t5);
-      theta3_2 = normalizeAngle(t6 + M_PI);
-
-      // double theta1 = atan2(R36(2, 2), R36(0, 2));
-      // double theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
-      // double theta3 = atan2(-R36(1, 1), R36(1, 0));
-
-      // double theta1_2 = atan2(-R36(2, 2), -R36(0, 2));
-      // double theta2_2 = atan2(-sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
-      // double theta3_2 = atan2(R36(1, 1), -R36(1, 0));
-
-      if (flipWristSol)
-      {
-        theta1_2 = previousSolution.theta4;
-        theta3_2 = previousSolution.theta6;
-
-        swap(theta1, theta1_2);
-        swap(theta2, theta2_2);
-        swap(theta3, theta3_2);
-      }
+      double theta1_2 = atan2(-R36(2, 2), -R36(0, 2));
+      double theta2_2 = atan2(-sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
+      double theta3_2 = atan2(R36(1, 1), -R36(1, 0));
 
       // offset + 3 arm thetas + index of wrist solution
       newIKSolution.thetas[offset + 3 + 0] = theta1;

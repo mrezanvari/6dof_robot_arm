@@ -117,6 +117,9 @@ void checkSerial()
   else if (cmd[0].equalsIgnoreCase("dev"))
     currentSystemState = DEV;
 
+  else if (cmd[0].equalsIgnoreCase("jacobi"))
+    currentSystemState = FULL_JACOBI;
+
   // switch case cannot be used for string in arduino ide!
   else if (cmd[0].equalsIgnoreCase("set"))
   {
@@ -152,6 +155,8 @@ void checkSerial()
         tempOrientation.theta = cmd[6].equalsIgnoreCase("nan") ? tempOrientation.theta : rad(cmd[6].toDouble());
         tempOrientation.psi = cmd[7].equalsIgnoreCase("nan") ? tempOrientation.psi : rad(cmd[7].toDouble());
       }
+
+      targetIK = solveFullIK(tempPos, tempOrientation, &targetJointAngles);
 
       globalTraceCoor.x = 0;
       globalTraceCoor.y = 0;
@@ -261,6 +266,18 @@ void checkSerial()
       Serial.println("Arm and Wrist zeroed");
 
       return;
+    }
+
+    else if (cmd[1].equalsIgnoreCase("gain"))
+    {
+      if (cmdSize != 3)
+      {
+        Serial.println("Command Error!  use \"help\"");
+        return;
+      }
+
+      globalJacobiGain = cmd[2].equalsIgnoreCase("nan") ? 1 : cmd[2].toDouble();
+      Serial.printf("Set globalJacobiGain to: %.3f\r\n", globalJacobiGain);
     }
 
     else if (cmd[1].equalsIgnoreCase("interval"))

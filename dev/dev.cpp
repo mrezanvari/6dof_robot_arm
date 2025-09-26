@@ -672,35 +672,56 @@ int main()
     JointAngle thisNewJoint;
     JointAngle lastStableJoint;
 
-    IKSolution newSolution = solveFullIK(newIKCoor, newIKOrientation, &thisNewJoint);
+    IKSolution newSolution = solveFullIK(newIKCoor, newIKOrientation, &lastStableJoint);
     offset = 0;
     printf("new IK right up Out ->      ");
     for (int i = offset; i < offset + 9; ++i)
         printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
     cout << endl;
 
-    printf("new IK right down Out ->    ");
-    offset = 9;
-    for (int i = offset; i < offset + 9; ++i)
-        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
-    cout << endl
-         << endl;
+    // printf("new IK right down Out ->    ");
+    // offset = 9;
+    // for (int i = offset; i < offset + 9; ++i)
+    //     printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
+    // cout << endl
+    //      << endl;
 
-    printf("new IK left up Out ->       ");
-    offset = 18;
-    for (int i = offset; i < offset + 9; ++i)
-        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
-    cout << endl;
+    // printf("new IK left up Out ->       ");
+    // offset = 18;
+    // for (int i = offset; i < offset + 9; ++i)
+    //     printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
+    // cout << endl;
 
-    printf("new IK left down Out ->     ");
-    offset = 27;
-    for (int i = offset; i < offset + 9; ++i)
-        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
+    // printf("new IK left down Out ->     ");
+    // offset = 27;
+    // for (int i = offset; i < offset + 9; ++i)
+    //     printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
     cout << endl
          << endl;
     printf("Solutions: %s\r\n", bitset<8>(newSolution.validationFlags.bits).to_string().c_str());
+
+    newIKOrientation.theta = -60;
+    newSolution = solveFullIK(newIKCoor, newIKOrientation, &thisNewJoint);
+
+    offset = 0;
+    printf("new IK right up Out ->      ");
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
+    cout << endl;
+    printf("Solutions: %s\r\n", bitset<8>(newSolution.validationFlags.bits).to_string().c_str());
+
     JointAngle best;
-    pickBestSolution(newSolution, lastStableJoint, &best);
+    double chose = pickBestSolution(newSolution, lastStableJoint, &best);
+    printf("Chose: %f\r\n", chose);
+
+    printf("Last Stable Solution  ->     ");
+    for (int i = 0; i < 6; ++i)
+        printf("θ%d=% .3f ", i + 1, deg(lastStableJoint.thetas[i]));
+    cout << endl;
+    printf("Best Selected Solution ->    ");
+    for (int i = 0; i < 6; ++i)
+        printf("θ%d=% .3f ", i + 1, deg(best.thetas[i]));
+    cout << endl;
 
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -872,7 +893,7 @@ int main()
     Coor targetPosition(
         410,
         215,
-        -350);
+        -360);
 
     fstream p_logger_line;
     p_logger_line.open("sim_pos_line.log", fstream::out);
@@ -886,10 +907,23 @@ int main()
     JointAngle targetJointAngles;
     JointAngle startJointAngles;
 
-    solveFullIK(startPosition, startOrientation, &startJointAngles);
+    IKSolution currentPosIK = solveFullIK(startPosition, startOrientation, &startJointAngles);
     currentMotorPosition = startJointAngles.toMotorPosition();
 
     IKSolution targetIK = solveFullIK(targetPosition, targetOrientation, &targetJointAngles);
+    int outBest = pickBestSolution(targetIK, startJointAngles, &targetJointAngles);
+
+    offset = 0;
+    printf("current IK right up Out ->      ");
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(currentPosIK.thetas[i]));
+    cout << endl;
+    printf("new IK right up Out ->          ");
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(targetIK.thetas[i]));
+    cout << endl;
+
+    printf("Chose solution: %d\r\n", outBest);
 
     bool isAtTarget = false;
     loopCount = 0;
@@ -901,7 +935,7 @@ int main()
         FK_out = FK(currentJointAngles);
         FK_coor = FK_out.first;
         J = createJacobianMatrix(FK_out.second);
-        VectorXd jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, 0.05); // gain really high because the delta is too low
+        VectorXd jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, 0.025); // gain really high because the delta is too low
 
         p_logBuffer_line = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} \r\n",
                                       FK_coor.y,
@@ -931,6 +965,8 @@ int main()
         p_logger_line << p_logBuffer_line;
         v_logger_line << v_logBuffer_line;
 
+        MotorPosition targetMotorPosition = targetJointAngles.toMotorPosition();
+
         currentMotorPosition.pos1 += jointVelocities(0);
         currentMotorPosition.pos2 += jointVelocities(1);
         currentMotorPosition.pos3 += jointVelocities(2);
@@ -938,8 +974,8 @@ int main()
         currentMotorPosition.pos5 += jointVelocities(4);
         currentMotorPosition.pos6 += jointVelocities(5);
 
-        if (FK_coor.toYUp().isEqualOrClose(targetPosition))
-            isAtTarget = true;
+        // if (FK_coor.toYUp().isEqualOrClose(targetPosition))
+        //     isAtTarget = true;
     }
     cout << "Output truncated... -> See \"sim_log.log\"" << endl;
     p_logger_line.close();
