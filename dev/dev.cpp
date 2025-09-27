@@ -1,91 +1,16 @@
 #include <iostream>
 #include "../robot_arm_codebase/lib/types.hpp"
 #include "../robot_arm_codebase/lib/IKUtils.hpp"
+#include "../robot_arm_codebase/lib/IK_Alternative.hpp"
 #include "../robot_arm_codebase/lib/FKUtils.hpp"
 #include "../robot_arm_codebase/lib/JacobianUtils.hpp"
-#include <vector>
-#include <string>
-#include <fstream>
-#include <format>
+#include "devUtils.hpp"
 
 Coor globalUserPos;
 JointAngle tempAngle;
 
 using namespace Eigen;
 using Eigen::MatrixXd;
-
-string objToBin(void *obj, size_t obj_size)
-{
-    unsigned char *pnt = reinterpret_cast<unsigned char *>(obj);
-    ostringstream out;
-    for (size_t i = 0; i < obj_size; i++)
-    {
-        for (size_t j = 0; j < 8; j++)
-            out << !!((pnt[i] << j) & 0x80);
-        out << " ";
-    }
-    return out.str();
-}
-
-template <typename... Args>
-string dyna_print(string_view rt_fmt_str, Args &&...args)
-{
-    return vformat(rt_fmt_str, std::make_format_args(args...));
-}
-void drawSectionLine(string sectionTitle = "")
-{
-    const char *sectionLine = "─";
-    const size_t sectionLineLength = 161;
-    if (sectionTitle != "")
-        sectionTitle = "« " + sectionTitle + " »";
-    const size_t sectionTitleSize = sectionTitle.size();
-
-    cout << endl;
-    for (int i = 0; i < sectionLineLength; ++i)
-    {
-        if (i == (floor(sectionLineLength / 2) - floor(sectionTitleSize / 2)))
-        {
-            cout << sectionTitle;
-            i += sectionTitleSize;
-        }
-        else
-            cout << sectionLine;
-    }
-    cout << endl
-         << endl;
-}
-
-template <typename Derived>
-void print_mat(const MatrixBase<Derived> &mat, bool newline = true, string formatstr = "  % 16.10G│")
-{
-    if (newline)
-        cout << endl;
-    for (size_t x = 0; x < mat.rows(); ++x)
-    {
-        for (size_t y = 0; y < mat.cols(); ++y)
-            printf(formatstr.c_str(), mat(x, y));
-        if (newline)
-            cout << endl;
-    }
-    if (newline)
-        cout << endl;
-}
-
-template <typename Derived>
-void printf_mat(const MatrixBase<Derived> &mat, string &out, bool newline = true, string formatstr = " {: 16.10G}│")
-{
-    if (newline)
-        out += "\r\n";
-    for (size_t x = 0; x < mat.rows(); ++x)
-    {
-        for (size_t y = 0; y < mat.cols(); ++y)
-            out += dyna_print(formatstr, mat(x, y));
-        if (newline)
-            out += "\r\n";
-    }
-    if (newline)
-        out += "\r\n";
-}
 
 int main()
 {
@@ -619,6 +544,8 @@ int main()
     int movesign = 1;
     theta = rad(-180);
 
+    cout << endl;
+    cout << "Generating Rotation Matrix difference:" << endl;
     while (++iter_i < iter_end)
     {
         theta += rad((movesign * 1));
@@ -654,73 +581,11 @@ int main()
         printf_mat(delta, r_logBuffer);
 
         r_logger << r_logBuffer;
+
+        drawProgressBar(iter_i, iter_end);
     }
 
     r_logger.close();
-    theta = saveTheta;
-    drawSectionLine("Pick Best solution test"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-    newIKCoor = Coor(
-        410,
-        215,
-        0);
-    Orientation newIKOrientation(
-        rad(90),
-        rad(90),
-        0);
-
-    JointAngle thisNewJoint;
-    JointAngle lastStableJoint;
-
-    IKSolution newSolution = solveFullIK(newIKCoor, newIKOrientation, &lastStableJoint);
-    offset = 0;
-    printf("new IK right up Out ->      ");
-    for (int i = offset; i < offset + 9; ++i)
-        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
-    cout << endl;
-
-    // printf("new IK right down Out ->    ");
-    // offset = 9;
-    // for (int i = offset; i < offset + 9; ++i)
-    //     printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
-    // cout << endl
-    //      << endl;
-
-    // printf("new IK left up Out ->       ");
-    // offset = 18;
-    // for (int i = offset; i < offset + 9; ++i)
-    //     printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
-    // cout << endl;
-
-    // printf("new IK left down Out ->     ");
-    // offset = 27;
-    // for (int i = offset; i < offset + 9; ++i)
-    //     printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
-    cout << endl
-         << endl;
-    printf("Solutions: %s\r\n", bitset<8>(newSolution.validationFlags.bits).to_string().c_str());
-
-    newIKOrientation.theta = -60;
-    newSolution = solveFullIK(newIKCoor, newIKOrientation, &thisNewJoint);
-
-    offset = 0;
-    printf("new IK right up Out ->      ");
-    for (int i = offset; i < offset + 9; ++i)
-        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
-    cout << endl;
-    printf("Solutions: %s\r\n", bitset<8>(newSolution.validationFlags.bits).to_string().c_str());
-
-    JointAngle best;
-    double chose = pickBestSolution(newSolution, lastStableJoint, &best);
-    printf("Chose: %f\r\n", chose);
-
-    printf("Last Stable Solution  ->     ");
-    for (int i = 0; i < 6; ++i)
-        printf("θ%d=% .3f ", i + 1, deg(lastStableJoint.thetas[i]));
-    cout << endl;
-    printf("Best Selected Solution ->    ");
-    for (int i = 0; i < 6; ++i)
-        printf("θ%d=% .3f ", i + 1, deg(best.thetas[i]));
     cout << endl;
 
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -782,8 +647,6 @@ int main()
         JointAngle desiredJointAngles;
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
-        double delta = pickBestSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
-
         // if (deg(devOrientation.theta) >= 120)
         //     for (int i = 6; i < 9; ++i)
         //         desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
@@ -801,7 +664,7 @@ int main()
         VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 10); // gain really high because the delta is too low
         // jointVelocities = jointVelocities.cwiseMin(2);
 
-        p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} │ J11 det:{: .5f} J22 det:{: .5f} │ rank:{} │ ∞: {:d} │ {}\r\n",
+        p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} │ J11 det:{: .5f} J22 det:{: .5f} │ rank:{} │ ∞: {:d}\r\n",
                                  FK_coor.y,
                                  FK_coor.z,
                                  FK_coor.x,
@@ -818,29 +681,7 @@ int main()
                                  singular_out.second.first,
                                  singular_out.second.second,
                                  rank,
-                                 isAtSingularity,
-                                 delta);
-
-        // p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} │ J11 det:{: .5f} J22 det:{: .5f} │ rank:{} │ ∞: {:d} │ {}\r\n",
-        //                          FK_coor.y,
-        //                          FK_coor.z,
-        //                          FK_coor.x,
-        //                          deg(fullIKSolution.right.up.theta1),
-        //                          deg(fullIKSolution.right.up.theta2),
-        //                          deg(fullIKSolution.right.up.theta3),
-        //                          deg(fullIKSolution.right.up.wrist2.theta1),
-        //                          deg(fullIKSolution.right.up.wrist2.theta2),
-        //                          deg(fullIKSolution.right.up.wrist2.theta3),
-        //                          deg(devOrientation.phi),
-        //                          deg(devOrientation.theta),
-        //                          deg(devOrientation.psi),
-        //                          bitset<8>(fullIKSolution.validationFlags.bits).to_string(),
-        //                          singular_out.second.first,
-        //                          singular_out.second.second,
-        //                          rank,
-        //                          isAtSingularity,
-        //                          delta);
-
+                                 isAtSingularity);
         v_logBuffer = "";
 
         for (int i = 0; i < jointVelocities.size(); ++i)
@@ -848,22 +689,21 @@ int main()
 
         v_logBuffer += "\r\n";
 
-        if (loopCount < 10)
-            cout << p_logBuffer;
+        // if (loopCount < 10)
+        //     cout << p_logBuffer;
 
         p_logger << p_logBuffer;
         v_logger << v_logBuffer;
 
         currentJointAngles = desiredJointAngles;
 
-        // if (deg(currentJointAngles.theta5) <= 1)
-        //     break;
+        drawProgressBar(loopCount, loopUpperBound);
     }
-    cout << "Output truncated... -> See \"sim_log.log\"" << endl;
+    cout << "\r\n\r\nOutput truncated... -> See logs" << endl;
     p_logger.close();
     v_logger.close();
 
-    drawSectionLine("Continious Motion Simulation 2"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+    drawSectionLine("Continious Motion Simulation 2 (Velocity Mode)"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     cout << "To begin second simulation, type 'yes':" << endl;
     usrInput = "";
@@ -911,7 +751,6 @@ int main()
     currentMotorPosition = startJointAngles.toMotorPosition();
 
     IKSolution targetIK = solveFullIK(targetPosition, targetOrientation, &targetJointAngles);
-    int outBest = pickBestSolution(targetIK, startJointAngles, &targetJointAngles);
 
     offset = 0;
     printf("current IK right up Out ->      ");
@@ -923,12 +762,11 @@ int main()
         printf("θ%d=% .3f ", i - offset + 1, deg(targetIK.thetas[i]));
     cout << endl;
 
-    printf("Chose solution: %d\r\n", outBest);
-
     bool isAtTarget = false;
     loopCount = 0;
     loopUpperBound = 6000;
 
+    cout << endl;
     while ((++loopCount < loopUpperBound) && !isAtTarget)
     {
         currentJointAngles = currentMotorPosition.toJointAngle();
@@ -959,8 +797,8 @@ int main()
 
         v_logBuffer_line += "\r\n";
 
-        if (loopCount < 10)
-            cout << p_logBuffer_line;
+        // if (loopCount < 10)
+        //     cout << p_logBuffer_line;
 
         p_logger_line << p_logBuffer_line;
         v_logger_line << v_logBuffer_line;
@@ -974,12 +812,14 @@ int main()
 
         if (FK_coor.toYUp().isEqualOrClose(targetPosition))
             isAtTarget = true;
+
+        drawProgressBar(loopCount, loopUpperBound);
     }
-    cout << "Output truncated... -> See \"sim_log.log\"" << endl;
+    cout << "\r\n\r\nOutput truncated... -> See logs" << endl;
     p_logger_line.close();
     v_logger_line.close();
 
-    drawSectionLine("Continious Motion Simulation 3"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+    drawSectionLine("Continious Motion Simulation 3 (Velocity Mode)"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     cout << "To begin second simulation, type 'yes':" << endl;
     usrInput = "";
@@ -1031,12 +871,12 @@ int main()
         printf("θ%d=% .3f ", i - offset + 1, deg(targetIK.thetas[i]));
     cout << endl;
 
-    printf("Chose solution: %d\r\n", outBest);
-
     loopCount = 0;
     loopUpperBound = 6000;
 
     moveDir = 1;
+
+    cout << endl;
 
     while (++loopCount < loopUpperBound)
     {
@@ -1076,9 +916,6 @@ int main()
 
         v_logBuffer_line += "\r\n";
 
-        if (loopCount < 10)
-            cout << p_logBuffer_line;
-
         p_logger_line << p_logBuffer_line;
         v_logger_line << v_logBuffer_line;
 
@@ -1088,8 +925,10 @@ int main()
         currentMotorPosition.pos4 += jointVelocities(3);
         currentMotorPosition.pos5 += jointVelocities(4);
         currentMotorPosition.pos6 += jointVelocities(5);
+
+        drawProgressBar(loopCount, loopUpperBound);
     }
-    cout << "Output truncated... -> See \"sim_log.log\"" << endl;
+    cout << "\r\n\r\nOutput truncated... -> See logs" << endl;
     p_logger_line.close();
     v_logger_line.close();
 }
