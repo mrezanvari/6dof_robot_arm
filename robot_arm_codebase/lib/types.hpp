@@ -351,42 +351,6 @@ struct IKSolution
 };
 #pragma pack(pop)
 
-struct IKSoutionSet
-{
-    /*
-        4 x arm solution branches
-        2 x wrist solution branches
-    */
-    struct LeftArm
-    {
-        JointAngle elbowUp;
-        JointAngle elbowDown;
-    };
-
-    struct RightArm
-    {
-        JointAngle elbowUp;
-        JointAngle elbowDown;
-    };
-
-    struct Wrist
-    {
-        double theta1{};
-        double theta2{};
-        double theta3{};
-    };
-
-    LeftArm leftArm;
-    RightArm rightArm;
-    Wrist wrist; // wrist would have a pair of solutions that are 180 opposite of each other.
-    // candidateSolution
-
-    // JointAngle toJointAngle()
-    // {
-    //     // fill candidate solution and return
-    // }
-};
-
 struct Orientation
 {
     double phi{};
