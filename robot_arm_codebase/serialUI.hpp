@@ -156,8 +156,6 @@ void checkSerial()
         tempOrientation.psi = cmd[7].equalsIgnoreCase("nan") ? tempOrientation.psi : rad(cmd[7].toDouble());
       }
 
-      targetIK = solveFullIK(tempPos, tempOrientation, &targetJointAngles);
-
       globalTraceCoor.x = 0;
       globalTraceCoor.y = 0;
       globalTraceCoor.z = 0;
