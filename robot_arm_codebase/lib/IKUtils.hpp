@@ -7,6 +7,17 @@ using namespace std;
 
 #define sq(x) ((x) * (x)) // Sqare function instead of pow(x, 2)
 
+double normalizeAngle(double radAngle)
+{
+  // https://stackoverflow.com/questions/11498169/dealing-with-angle-wrap-in-c-code
+  while (radAngle >= M_PI)
+    radAngle -= (2.0 * M_PI);
+  while (radAngle < -M_PI)
+    radAngle += (2.0 * M_PI);
+
+  return radAngle;
+}
+
 void validate3DoFIKSolutions(IKSolution *newIKSolution, const vector<DHParams> &jointParams = globalJointParams)
 {
   /*
@@ -169,21 +180,24 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
         ⎣sin(t₄)⋅cos(t₅)⋅cos(t₆) + sin(t₆)⋅cos(t₄)   -sin(t₄)⋅sin(t₆)⋅cos(t₅) + cos(t₄)⋅cos(t₆)  sin(t₄)⋅sin(t₅)⎦
       */
 
+      // wrist 1 solutions
       double theta1 = atan2(R36(2, 2), R36(0, 2));
       double theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
       double theta3 = atan2(-R36(1, 1), R36(1, 0));
 
-      double theta1_2 = atan2(-R36(2, 2), -R36(0, 2));
-      double theta2_2 = atan2(-sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
-      double theta3_2 = atan2(R36(1, 1), -R36(1, 0));
+      // wrist 2 solutions
+      double theta1_2 = atan2(R36(2, 2), -R36(0, 2)); // t1 +- PI but this will resolve some rounding errors that could arise
+      double theta2_2 = -theta2;
+      double theta3_2 = atan2(-R36(1, 1), -R36(1, 0));
 
       // offset + 3 arm thetas + index of wrist solution
-      newIKSolution.thetas[offset + 3 + 0] = theta1;
-      newIKSolution.thetas[offset + 3 + 1] = theta2;
-      newIKSolution.thetas[offset + 3 + 2] = theta3;
-      newIKSolution.thetas[offset + 3 + 3] = theta1_2;
-      newIKSolution.thetas[offset + 3 + 4] = theta2_2;
-      newIKSolution.thetas[offset + 3 + 5] = theta3_2;
+      // normalizeAngle not needed on paper but, it can resolves some jumps due to rounding
+      newIKSolution.thetas[offset + 3 + 0] = normalizeAngle(theta1);
+      newIKSolution.thetas[offset + 3 + 1] = normalizeAngle(theta2);
+      newIKSolution.thetas[offset + 3 + 2] = normalizeAngle(theta3);
+      newIKSolution.thetas[offset + 3 + 3] = normalizeAngle(theta1_2);
+      newIKSolution.thetas[offset + 3 + 4] = normalizeAngle(theta2_2);
+      newIKSolution.thetas[offset + 3 + 5] = normalizeAngle(theta3_2);
     }
   }
 
@@ -197,4 +211,44 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
       theta = NAN;
 
   return newIKSolution;
+}
+
+int pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStableSolution, JointAngle *bestSolution)
+{
+  // This function may not produce the expected result please avoid using.
+  int offsetMultiplier = 1; // value will be [1, 2, 4, 5, 7, 8, 10, 11]
+
+  double delta = INT_MAX;
+  int chosen = -1;
+
+  for (int currentSolution = 0; currentSolution < 8; ++currentSolution)
+  {
+    int offset = offsetMultiplier * 3;
+    offsetMultiplier += ((currentSolution + 1) % 2 == 0) ? 2 : 1; // skip 3, 6, 9
+
+    if (!(newIKSolution.validationFlags.bits & (1 << currentSolution)))
+      continue;
+
+    JointAngle thisSolution;
+    int armOffset = floor(currentSolution / 2.0);
+
+    for (int i = 0; i < 3; ++i)
+      thisSolution.thetas[i] = newIKSolution.thetas[armOffset + i];
+
+    for (int i = 0; i < 3; ++i)
+      thisSolution.thetas[i + 3] = newIKSolution.thetas[offset + i];
+
+    double thisDelta = 0;
+    for (int i = 0; i < 6; ++i)
+      thisDelta += abs(lastStableSolution.thetas[i] - thisSolution.thetas[i]);
+
+    if (thisDelta < delta)
+    {
+      *bestSolution = thisSolution;
+      chosen = currentSolution;
+      delta = thisDelta;
+    }
+  }
+
+  return chosen;
 }

@@ -588,6 +588,54 @@ int main()
     r_logger.close();
     cout << endl;
 
+    drawSectionLine("Pick Best solution test"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    newIKCoor = Coor(
+        410,
+        215,
+        0);
+    Orientation newIKOrientation(
+        rad(90),
+        rad(90),
+        0);
+
+    JointAngle thisNewJoint;
+    JointAngle lastStableJoint;
+
+    IKSolution newSolution = solveFullIK(newIKCoor, newIKOrientation, &lastStableJoint);
+    offset = 0;
+    printf("new IK right up Out ->      ");
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
+    cout << endl;
+
+    cout << endl
+         << endl;
+    printf("Solutions: %s\r\n", bitset<8>(newSolution.validationFlags.bits).to_string().c_str());
+
+    newIKOrientation.theta = -60;
+    newSolution = solveFullIK(newIKCoor, newIKOrientation, &thisNewJoint);
+
+    offset = 0;
+    printf("new IK right up Out ->      ");
+    for (int i = offset; i < offset + 9; ++i)
+        printf("θ%d=% .3f ", i - offset + 1, deg(newSolution.thetas[i]));
+    cout << endl;
+    printf("Solutions: %s\r\n", bitset<8>(newSolution.validationFlags.bits).to_string().c_str());
+
+    JointAngle best;
+    double chose = pickBestSolution(newSolution, lastStableJoint, &best);
+    printf("Chose: %f\r\n", chose);
+
+    printf("Last Stable Solution  ->     ");
+    for (int i = 0; i < 6; ++i)
+        printf("θ%d=% .3f ", i + 1, deg(lastStableJoint.thetas[i]));
+    cout << endl;
+    printf("Best Selected Solution ->    ");
+    for (int i = 0; i < 6; ++i)
+        printf("θ%d=% .3f ", i + 1, deg(best.thetas[i]));
+    cout << endl;
+
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     cout << "To begin simulation, type 'yes':" << endl;
@@ -647,9 +695,10 @@ int main()
         JointAngle desiredJointAngles;
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
-        // if (deg(devOrientation.theta) >= 120)
-        //     for (int i = 6; i < 9; ++i)
-        //         desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
+        int chosen = pickBestSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
+
+        // for (int i = 6; i < 9; ++i)
+        //     desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
 
         currentMotorPosition = currentJointAngles.toMotorPosition();
         FK_out = FK(currentMotorPosition.toJointAngle());
@@ -662,9 +711,9 @@ int main()
         int rank = fivLU.rank();
 
         VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 10); // gain really high because the delta is too low
-        // jointVelocities = jointVelocities.cwiseMin(2);
+        jointVelocities = jointVelocities.cwiseMin(0.006).cwiseMax(-0.006);
 
-        p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} │ J11 det:{: .5f} J22 det:{: .5f} │ rank:{} │ ∞: {:d}\r\n",
+        p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} │ J11 det:{: .5f} J22 det:{: .5f} │ rank:{} │ ∞: {:d} | {}\r\n",
                                  FK_coor.y,
                                  FK_coor.z,
                                  FK_coor.x,
@@ -681,7 +730,8 @@ int main()
                                  singular_out.second.first,
                                  singular_out.second.second,
                                  rank,
-                                 isAtSingularity);
+                                 isAtSingularity,
+                                 chosen);
         v_logBuffer = "";
 
         for (int i = 0; i < jointVelocities.size(); ++i)
