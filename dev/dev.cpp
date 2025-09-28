@@ -638,11 +638,11 @@ int main()
 
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    // cout << "To begin simulation, type 'yes':" << endl;
-    // string usrInput;
-    // cin >> usrInput;
-    // if (!(usrInput == "yes" || usrInput == "y"))
-    //     return 0;
+    cout << "To begin simulation, type 'yes':" << endl;
+    string usrInput;
+    cin >> usrInput;
+    if (!(usrInput == "yes" || usrInput == "y"))
+        return 0;
 
     printf("\r\n\r\n");
 
@@ -755,11 +755,11 @@ int main()
 
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    // cout << "To begin simulation, type 'yes':" << endl;
-    // usrInput = "";
-    // cin >> usrInput;
-    // if (!(usrInput == "yes" || usrInput == "y"))
-    //     return 0;
+    cout << "To begin simulation, type 'yes':" << endl;
+    usrInput = "";
+    cin >> usrInput;
+    if (!(usrInput == "yes" || usrInput == "y"))
+        return 0;
 
     printf("\r\n\r\n");
 
@@ -874,11 +874,11 @@ int main()
 
     drawSectionLine("Continious Motion Simulation 3 (Velocity Mode)"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    // cout << "To begin second simulation, type 'yes':" << endl;
-    // usrInput = "";
-    // cin >> usrInput;
-    // if (!(usrInput == "yes" || usrInput == "y"))
-    //     return 0;
+    cout << "To begin second simulation, type 'yes':" << endl;
+    usrInput = "";
+    cin >> usrInput;
+    if (!(usrInput == "yes" || usrInput == "y"))
+        return 0;
 
     printf("\r\n\r\n");
 
@@ -990,11 +990,11 @@ int main()
 
     drawSectionLine("Continious Motion Simulation 4 (Velocity Mode)"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    // cout << "To begin second simulation, type 'yes':" << endl;
-    // usrInput = "";
-    // cin >> usrInput;
-    // if (!(usrInput == "yes" || usrInput == "y"))
-    //     return 0;
+    cout << "To begin second simulation, type 'yes':" << endl;
+    usrInput = "";
+    cin >> usrInput;
+    if (!(usrInput == "yes" || usrInput == "y"))
+        return 0;
 
     printf("\r\n\r\n");
 
