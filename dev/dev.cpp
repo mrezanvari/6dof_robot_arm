@@ -638,11 +638,11 @@ int main()
 
     drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    cout << "To begin simulation, type 'yes':" << endl;
-    string usrInput;
-    cin >> usrInput;
-    if (!(usrInput == "yes" || usrInput == "y"))
-        return 0;
+    // cout << "To begin simulation, type 'yes':" << endl;
+    // string usrInput;
+    // cin >> usrInput;
+    // if (!(usrInput == "yes" || usrInput == "y"))
+    //     return 0;
 
     printf("\r\n\r\n");
 
@@ -753,13 +753,132 @@ int main()
     p_logger.close();
     v_logger.close();
 
-    drawSectionLine("Continious Motion Simulation 2 (Velocity Mode)"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+    drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    cout << "To begin second simulation, type 'yes':" << endl;
-    usrInput = "";
-    cin >> usrInput;
-    if (!(usrInput == "yes" || usrInput == "y"))
-        return 0;
+    // cout << "To begin simulation, type 'yes':" << endl;
+    // usrInput = "";
+    // cin >> usrInput;
+    // if (!(usrInput == "yes" || usrInput == "y"))
+    //     return 0;
+
+    printf("\r\n\r\n");
+
+    currentMotorPosition = MotorPosition();
+
+    devOrientation = Orientation(
+        rad(90),
+        rad(90),
+        0);
+
+    newIKCoor = Coor(
+        410,
+        215,
+        360);
+
+    moveDir = -1;
+
+    loopUpperBound = 2000;
+    loopCount = 0;
+    p_logger.open("sim_pos2.log", fstream::out);
+    v_logger.open("sim_vel2.log", fstream::out);
+
+    currentJointAngles = JointAngle();
+
+    solveFullIK(newIKCoor, devOrientation, &currentJointAngles);
+    while (++loopCount < loopUpperBound)
+    {
+        newIKCoor.z += (moveDir * 0.5);
+        // devOrientation.phi += rad((-moveDir * 0.1));
+
+        // TODO: Make the ball rotate around itself -> this would be a starting point:
+        // double thet = constrain(rad(30) + sin(millis() * 0.0001), rad(30), rad(100));
+        // double ph = constrain(rad(90) + cos(millis() * 0.0001), rad(90), rad(180));
+        // printf("theta:% .5f phi:% .5f t2:% .5f p2:% .5f\r\n", deg(thet), deg(ph), deg(devOrientation.theta), deg(devOrientation.phi));
+
+        // if (newIKCoor.z > 360)
+        //     moveDir = -1;
+        // else if (newIKCoor.z <= -360)
+        //     moveDir = 1;
+
+        if (newIKCoor.z <= -360)
+            break;
+
+        // newIKCoor.z += 1;
+        // if (newIKCoor.z > -50)
+        //     break;
+
+        JointAngle desiredJointAngles;
+        IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
+
+        int chosen = pickBestSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
+        // if (newIKCoor.z < 0)
+        // {
+        //     desiredJointAngles.theta4 = fullIKSolution.right.up.wrist2.theta3;
+        //     desiredJointAngles.theta6 = fullIKSolution.right.up.wrist2.theta1;
+        // }
+        // for (int i = 6; i < 9; ++i)
+        //     desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
+
+        currentMotorPosition = currentJointAngles.toMotorPosition();
+        FK_out = FK(currentMotorPosition.toJointAngle());
+        FK_coor = FK_out.first;
+        J = createJacobianMatrix(FK_out.second);
+        auto singular_out = IsSingular(J, 1e-4);
+        isAtSingularity = singular_out.first;
+
+        FullPivLU<MatrixXd> fivLU(J);
+        int rank = fivLU.rank();
+
+        VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 10); // gain really high because the delta is too low
+        jointVelocities = jointVelocities.cwiseMin(0.006).cwiseMax(-0.006);
+
+        p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} │ J11 det:{: .5f} J22 det:{: .5f} │ rank:{} │ ∞: {:d} | {}\r\n",
+                                 FK_coor.y,
+                                 FK_coor.z,
+                                 FK_coor.x,
+                                 deg(desiredJointAngles.theta1),
+                                 deg(desiredJointAngles.theta2),
+                                 deg(desiredJointAngles.theta3),
+                                 deg(desiredJointAngles.theta4),
+                                 deg(desiredJointAngles.theta5),
+                                 deg(desiredJointAngles.theta6),
+                                 deg(devOrientation.phi),
+                                 deg(devOrientation.theta),
+                                 deg(devOrientation.psi),
+                                 bitset<8>(fullIKSolution.validationFlags.bits).to_string(),
+                                 singular_out.second.first,
+                                 singular_out.second.second,
+                                 rank,
+                                 isAtSingularity,
+                                 chosen);
+        v_logBuffer = "";
+
+        for (int i = 0; i < jointVelocities.size(); ++i)
+            v_logBuffer += dyna_print("v{}:{:.10f}\t", i, jointVelocities(i));
+
+        v_logBuffer += "\r\n";
+
+        // if (loopCount < 10)
+        //     cout << p_logBuffer;
+
+        p_logger << p_logBuffer;
+        v_logger << v_logBuffer;
+
+        currentJointAngles = desiredJointAngles;
+
+        drawProgressBar(loopCount, loopUpperBound);
+    }
+    cout << "\r\n\r\nOutput truncated... -> See logs" << endl;
+    p_logger.close();
+    v_logger.close();
+
+    drawSectionLine("Continious Motion Simulation 3 (Velocity Mode)"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+    // cout << "To begin second simulation, type 'yes':" << endl;
+    // usrInput = "";
+    // cin >> usrInput;
+    // if (!(usrInput == "yes" || usrInput == "y"))
+    //     return 0;
 
     printf("\r\n\r\n");
 
@@ -773,7 +892,7 @@ int main()
     Coor startPosition(
         410,
         215,
-        0);
+        360);
 
     Orientation targetOrientation(
         rad(90),
@@ -786,10 +905,10 @@ int main()
         -360);
 
     fstream p_logger_line;
-    p_logger_line.open("sim_pos2.log", fstream::out);
+    p_logger_line.open("sim_pos3.log", fstream::out);
 
     fstream v_logger_line;
-    v_logger_line.open("sim_vel2.log", fstream::out);
+    v_logger_line.open("sim_vel3.log", fstream::out);
 
     string p_logBuffer_line;
     string v_logBuffer_line;
@@ -814,7 +933,7 @@ int main()
 
     bool isAtTarget = false;
     loopCount = 0;
-    loopUpperBound = 6000;
+    loopUpperBound = 8000;
 
     cout << endl;
     while ((++loopCount < loopUpperBound) && !isAtTarget)
@@ -823,7 +942,7 @@ int main()
         FK_out = FK(currentJointAngles);
         FK_coor = FK_out.first;
         J = createJacobianMatrix(FK_out.second);
-        VectorXd jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, 0.025); // gain really high because the delta is too low
+        VectorXd jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, 0.005);
 
         p_logBuffer_line = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} \r\n",
                                       FK_coor.y,
@@ -869,13 +988,13 @@ int main()
     p_logger_line.close();
     v_logger_line.close();
 
-    drawSectionLine("Continious Motion Simulation 3 (Velocity Mode)"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+    drawSectionLine("Continious Motion Simulation 4 (Velocity Mode)"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-    cout << "To begin second simulation, type 'yes':" << endl;
-    usrInput = "";
-    cin >> usrInput;
-    if (!(usrInput == "yes" || usrInput == "y"))
-        return 0;
+    // cout << "To begin second simulation, type 'yes':" << endl;
+    // usrInput = "";
+    // cin >> usrInput;
+    // if (!(usrInput == "yes" || usrInput == "y"))
+    //     return 0;
 
     printf("\r\n\r\n");
 
@@ -901,8 +1020,8 @@ int main()
         215,
         0);
 
-    p_logger_line.open("sim_pos3.log", fstream::out);
-    v_logger_line.open("sim_vel3.log", fstream::out);
+    p_logger_line.open("sim_pos4.log", fstream::out);
+    v_logger_line.open("sim_vel4.log", fstream::out);
 
     currentPosIK = solveFullIK(startPosition, startOrientation, &startJointAngles);
     currentMotorPosition = startJointAngles.toMotorPosition();

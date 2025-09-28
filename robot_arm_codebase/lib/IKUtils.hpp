@@ -181,17 +181,17 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
       */
 
       // wrist 1 solutions
+
       double theta1 = atan2(R36(2, 2), R36(0, 2));
       double theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
       double theta3 = atan2(-R36(1, 1), R36(1, 0));
 
       // wrist 2 solutions
-      double theta1_2 = atan2(R36(2, 2), -R36(0, 2)); // t1 +- PI but this will resolve some rounding errors that could arise
+      double theta1_2 = atan2(R36(2, 2), -R36(0, 2));
       double theta2_2 = -theta2;
       double theta3_2 = atan2(-R36(1, 1), -R36(1, 0));
 
       // offset + 3 arm thetas + index of wrist solution
-      // normalizeAngle not needed on paper but, it can resolves some jumps due to rounding
       newIKSolution.thetas[offset + 3 + 0] = normalizeAngle(theta1);
       newIKSolution.thetas[offset + 3 + 1] = normalizeAngle(theta2);
       newIKSolution.thetas[offset + 3 + 2] = normalizeAngle(theta3);
