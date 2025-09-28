@@ -458,9 +458,7 @@ void system_run()
     J = createJacobianMatrix(FK_out.second);
     auto singular_out = IsSingular(J);
     bool isAtSingularity = singular_out.first;
-    VectorXd jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, globalJacobiGain);
-
-    jointVelocities = jointVelocities.cwiseMin(2).cwiseMax(-2);
+    VectorXd jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, globalJacobiGain, 2);
 
     Serial.printf("x:% .3f y:% .3f z:% .3f │ v1:% .3f v2:% .3f v3:% .3f v4:% .3f v5:% .3f v6:% .3f | ∞: %d | phi:% .3f theta:% .3f psi:% .3f | %s\r\n",
                   FK_coor.x,
