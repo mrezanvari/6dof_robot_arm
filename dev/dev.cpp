@@ -636,7 +636,7 @@ int main()
         printf("θ%d=% .3f ", i + 1, deg(best.thetas[i]));
     cout << endl;
 
-    drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+    drawSectionLine("Continious Motion Simulation (Pure IK Position Mode)"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     cout << "To begin simulation, type 'yes':" << endl;
     string usrInput;
@@ -753,7 +753,7 @@ int main()
     p_logger.close();
     v_logger.close();
 
-    drawSectionLine("Continious Motion Simulation"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+    drawSectionLine("Continious Motion Simulation 2 (Pure IK Position Mode)"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     cout << "To begin simulation, type 'yes':" << endl;
     usrInput = "";
