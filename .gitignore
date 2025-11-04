@@ -6,6 +6,6 @@
 */*.out
 *.log
 */*.log
-*/ros2_integr/build
-*/ros2_integr/log
-*/ros2_integr/install
+ros2_integr/build
+ros2_integr/log
+ros2_integr/install
