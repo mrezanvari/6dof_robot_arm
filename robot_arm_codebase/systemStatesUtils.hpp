@@ -443,6 +443,8 @@ void system_run()
   {
 
     targetIK = solveFullIK(tempPos, tempOrientation, &targetJointAngles); // not needed to run everytime but here for readability + traceCoor
+    mayProceed = (targetIK.validationFlags.bits > 0);
+
     currentMotorPosition = MotorPosition(
         baseJointMotor.last_result().values.position,
         lowerJointMotor.last_result().values.position,
@@ -452,6 +454,19 @@ void system_run()
         wristUpperJointMotor.last_result().values.position);
 
     JointAngle currentJointAngles = currentMotorPosition.toJointAngle();
+
+    if (mayProceed)
+    {
+      globalUserOrientation = tempOrientation;
+      globalUserPos = tempPos;
+    }
+
+    else
+    {
+      tempPos = globalUserPos;
+      tempOrientation = globalUserOrientation;
+      targetJointAngles = currentJointAngles;
+    }
 
     FK_out = FK(currentJointAngles);
     FK_coor = FK_out.first;
