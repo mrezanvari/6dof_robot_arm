@@ -8,6 +8,7 @@
 using namespace Eigen;
 using Eigen::MatrixXd;
 
+VectorXd globalPreviousVelocities(6);
 pair<bool, pair<double, double>> IsSingular(MatrixXd &jacobian, double epsilon = 1e-2)
 {
   MatrixXd J11(3, 3);
@@ -16,9 +17,15 @@ pair<bool, pair<double, double>> IsSingular(MatrixXd &jacobian, double epsilon =
   J11 = jacobian.block<3, 3>(0, 0);
   J22 = jacobian.block<3, 3>(3, 3);
 
-  double det11 = J11.determinant();
-  double det22 = abs(J22.determinant());
-  bool singularity = (det11 * det22) <= epsilon;
+  // so ik, fk and jacobian use values that are in m but we use mm
+  // we know 1mm/1000 = 1m
+  // and since J11 is a rotation matrix -> 3 matmuls
+  // if we want rescale the final determinant
+  // we must do pow(scale of one, 3)
+  // so 1000^3 = 1000000000.0;
+  double det11 = J11.determinant() / 1000000000.0; // must be removed once the .toMeter() and .toMillimeters() functions are active and working
+  double det22 = J22.determinant();
+  bool singularity = abs(det11 * det22) <= epsilon;
   pair<double, double> determinants = {det11, det22};
   return pair<bool, pair<double, double>>{singularity, determinants};
 }
@@ -43,13 +50,52 @@ MatrixXd createJacobianMatrix(const vector<Matrix4d> &frames)
     jacobian.block<3, 1>(3, ind) = zi;
   }
 
-  // TODO:do singularity checks
   return jacobian;
 }
 
-VectorXd getJointVelocities(const MatrixXd &J, const VectorXd &v)
+VectorXd extractJointRelation(const MatrixXd &J, const VectorXd &v)
 {
-  // TODO: be sure singularities are handled gracefully!
-  auto J_inv = J.inverse();
+  /*
+    Basis for velocity and force relations for the Jacobian matrix.
+    For now, it is implemeted as a simple psuedo inverse multiplied by
+    the input vector of v. Current implementation is focused on velocity
+    Jacobian so a simple inverse would suffice. But in the future
+    once can implement dampening, svd, or even force control using this
+    function. This is why it is seperated into a function, by itself
+    it deserves development down the line.
+  */
+  MatrixXd J_inv = J.completeOrthogonalDecomposition().pseudoInverse();
+  // MatrixXd J_inv = J.inverse();
   return J_inv * v;
+}
+
+VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &desiredAngles, const double gain = 1, const double clamp = 2)
+{
+  auto currentFK_out = FK(currentAngles);
+  auto desiredFK_out = FK(desiredAngles);
+
+  vector<Matrix4d> currentFrames = currentFK_out.second;
+  vector<Matrix4d> desiredFrames = desiredFK_out.second;
+
+  Coor currentPos = currentFK_out.first;
+  Coor desiredPos = desiredFK_out.first;
+  Coor errorPos = desiredPos - currentPos;
+
+  Matrix3d currentRotation = currentFrames.back().block<3, 3>(0, 0);
+  Matrix3d desiredRotaion = desiredFrames.back().block<3, 3>(0, 0);
+  Matrix3d errorRotationMatrix = desiredRotaion * currentRotation.inverse();
+  AngleAxisd errorRotationAngleAxis(errorRotationMatrix);
+  Vector3d errorRotatationVector = errorRotationAngleAxis.angle() * errorRotationAngleAxis.axis(); // convert rotation matrix to rotation vector
+
+  MatrixXd J = createJacobianMatrix(currentFrames);
+  VectorXd v(6);
+  v.head(3) = errorPos.toVector3d();
+  v.tail(3) = errorRotatationVector;
+
+  VectorXd newVelocities = extractJointRelation(J, v);
+  newVelocities /= 2 * M_PI;
+  newVelocities *= gain;
+  newVelocities = newVelocities.cwiseMin(clamp).cwiseMax(-clamp);
+
+  return newVelocities;
 }

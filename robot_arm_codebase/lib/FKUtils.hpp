@@ -1,13 +1,4 @@
 #pragma once
-#ifdef ARDUINO
-#include <ArduinoEigenDense.h>
-#else
-#include <Eigen/Dense>
-#endif
-
-using namespace Eigen;
-using Eigen::MatrixXd;
-
 #include "RobotParams.hpp"
 
 Matrix4d createDHMatrix(double theta, DHParams dhparams)
@@ -42,9 +33,16 @@ Matrix3d createRotationMatrix(Orientation orientation)
   double theta = orientation.theta;
   double psi = orientation.psi;
 
-  Matrix3d R{{-sin(phi) * sin(psi) + cos(phi) * cos(psi) * cos(theta), -sin(phi) * cos(psi) - sin(psi) * cos(phi) * cos(theta), sin(theta) * cos(phi)},
-             {sin(phi) * cos(psi) * cos(theta) + sin(psi) * cos(phi), -sin(phi) * sin(psi) * cos(theta) + cos(phi) * cos(psi), sin(phi) * sin(theta)},
-             {-sin(theta) * cos(psi), sin(psi) * sin(theta), cos(theta)}};
+  double sphi = sin(phi);
+  double cphi = cos(phi);
+  double stheta = sin(theta);
+  double ctheta = cos(theta);
+  double spsi = sin(psi);
+  double cpsi = cos(psi);
+
+  Matrix3d R{{-sphi * spsi + cphi * cpsi * ctheta, -sphi * cpsi - spsi * cphi * ctheta, stheta * cphi},
+             {sphi * cpsi * ctheta + spsi * cphi, -sphi * spsi * ctheta + cphi * cpsi, sphi * stheta},
+             {-stheta * cpsi, spsi * stheta, ctheta}};
 
   return R;
 }
@@ -62,8 +60,10 @@ pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams>
 
   Block position = frames.back().block<3, 1>(0, 3); // origin of the frame Tn which corresponds to our end effector
 
-  // return pair(Coor(position(1), position(2), position(0)), frames);
-  return pair(Coor(position(0), position(1), position(2)), frames);
+  Coor fkCoorOut(position(0), position(1), position(2), Coor::CoorType::Z_UP, Coor::CoorScale::METER);
+
+  // fkCoorOut = fkCoorOut.toMillimeters();
+  return pair(fkCoorOut, frames);
 }
 
 Coor FK_precise(const JointAngle &angles)

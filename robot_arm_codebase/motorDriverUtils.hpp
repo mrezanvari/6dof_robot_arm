@@ -122,6 +122,16 @@ void brakeAllMotors()
   wristUpperJointMotor.SetBrake();
 }
 
+void stopAllMotors()
+{
+  baseJointMotor.SetStop();
+  lowerJointMotor.SetStop();
+  upperJointMotor.SetStop();
+  wristBaseJointMotor.SetStop();
+  wristLowerJointMotor.SetStop();
+  wristUpperJointMotor.SetStop();
+}
+
 void lockMotor(Moteus &motor, bool useDiagnoseProtocol = true)
 {
   if (useDiagnoseProtocol)
@@ -136,4 +146,34 @@ void lockMotor(Moteus &motor, bool useDiagnoseProtocol = true)
   motor_cmd.maximum_torque = NaN;
 
   motor.SetPosition(motor_cmd);
+}
+
+void setMotorPositionVelocity(Moteus &motor, double &position, double &velocity)
+{
+  Moteus::PositionMode::Command motor_cmd;
+  motor_cmd.velocity = NaN;
+  motor_cmd.maximum_torque = NaN;
+  motor_cmd.position = position;
+  motor_cmd.velocity_limit = abs(velocity);
+  motor.SetPosition(motor_cmd, &motor_position_fmt, &motor_query_fmt);
+}
+
+void setMotorPositionVelocityAccel(Moteus &motor, double &position, double &velocity, double &acceleration)
+{
+  Moteus::PositionMode::Command motor_cmd;
+  motor_cmd.velocity = 0.0;
+  motor_cmd.maximum_torque = NaN;
+  motor_cmd.position = position;
+  motor_cmd.velocity_limit = velocity;
+  motor_cmd.accel_limit = acceleration;
+  motor.SetPosition(motor_cmd, &motor_position_fmt, &motor_query_fmt);
+}
+
+void setMotorVelocity(Moteus &motor, double &velocity)
+{
+  Moteus::PositionMode::Command motor_cmd;
+  motor_cmd.velocity = velocity;
+  motor_cmd.maximum_torque = NaN;
+  motor_cmd.position = NaN;
+  motor.SetPosition(motor_cmd, &motor_position_fmt, &motor_query_fmt);
 }

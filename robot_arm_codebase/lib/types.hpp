@@ -1,5 +1,13 @@
 #pragma once
+#ifdef ARDUINO
+#include <ArduinoEigenDense.h>
+#else
+#include <Eigen/Dense>
+#endif
 #include <iostream>
+
+using namespace Eigen;
+using Eigen::MatrixXd;
 
 using namespace std;
 
@@ -26,12 +34,104 @@ struct MotorPosition;
 
 struct Coor
 {
+    enum CoorType
+    {
+        Z_UP,
+        Y_UP,
+    };
+
+    enum CoorScale
+    {
+        MILLIMETER,
+        METER,
+    };
+
     double x{};
     double y{};
     double z{};
+    CoorType axisType = CoorType::Y_UP;
+    CoorScale coorScale = CoorScale::MILLIMETER;
 
     Coor() = default;
-    Coor(double x, double y, double z) : x(x), y(y), z(z) {}
+    Coor(double x, double y, double z, CoorType axisType = CoorType::Y_UP, CoorScale coorScale = CoorScale::MILLIMETER) : x(x),
+                                                                                                                          y(y),
+                                                                                                                          z(z),
+                                                                                                                          axisType(axisType),
+                                                                                                                          coorScale(coorScale) {}
+    explicit Coor(const Vector3d &v, CoorType axisType, CoorScale coorScale) : x(v(0)),
+                                                                               y(v(1)),
+                                                                               z(v(2)),
+                                                                               axisType(axisType),
+                                                                               coorScale(coorScale) {} // conversion from vector3d
+
+    Coor toZUp() const
+    {
+        // to convert from human-readable Y-Up to the book's Z-Up coordinates
+        return Coor(z, x, y, Z_UP);
+    }
+
+    Coor toYUp() const
+    {
+        // to convert from book's Z-Up to human-readable Y-Up coordinates
+        return Coor(y, z, x, Y_UP);
+    }
+
+    Vector3d toVector3d() const
+    {
+        return Vector3d{{
+            x,
+            y,
+            z,
+        }};
+    }
+
+    Coor toMeter()
+    {
+        return Coor(x / 1000.0,
+                    y / 1000.0,
+                    z / 1000.0,
+                    axisType,
+                    CoorScale::METER);
+    }
+
+    Coor toMillimeters()
+    {
+        return Coor(x * 1000.0,
+                    y * 1000.0,
+                    z * 1000.0,
+                    axisType,
+                    CoorScale::MILLIMETER);
+    }
+
+    Coor &operator=(const Coor &other)
+    {
+        x = other.x;
+        y = other.y;
+        z = other.z;
+        axisType = other.axisType;
+        coorScale = other.coorScale;
+
+        return *this;
+    }
+
+    Coor operator-(const Coor &other) const
+    {
+        if (axisType != other.axisType || coorScale != other.coorScale)
+        {
+            throw std::logic_error("(-) operator ERROR: Coor objects must have be of the same coorScale and axisType");
+            return Coor(-1, -1, -1);
+        }
+        return Coor(x - other.x, y - other.y, z - other.z);
+    }
+
+    bool isEqualOrClose(const Coor &other, double threshold = 1e-3)
+    {
+        return (abs(other.x - x) <= threshold &&
+                abs(other.y - y) <= threshold &&
+                abs(other.z - z) <= threshold &&
+                axisType == other.axisType &&
+                coorScale == other.coorScale);
+    }
 };
 
 struct MotorPosition
@@ -83,6 +183,18 @@ struct JointAngle
                                                               theta6(theta6) {}
 
     MotorPosition toMotorPosition();
+
+    JointAngle &operator=(const JointAngle &other)
+    {
+        theta1 = other.theta1;
+        theta2 = other.theta2;
+        theta3 = other.theta3;
+        theta4 = other.theta4;
+        theta5 = other.theta5;
+        theta6 = other.theta6;
+
+        return *this;
+    }
 };
 
 JointAngle MotorPosition::toJointAngle()
@@ -169,35 +281,75 @@ struct DHParams
                                          isModifiedDH(isModifiedDH) {}
 };
 
-struct IKSoutionSet
+#pragma pack(push, 1)
+struct IKSolution
 {
     /*
-        4 x arm solution branches
-        2 x wrist solution branches
-    */
-    struct LeftArm
-    {
-        JointAngle elbowUp;
-        JointAngle elbowDown;
-    };
+        This struct is meant to hold all 8 solutions of the IK
+        2: elbow up/down
+        2: wrist up/down
+        2: shoulder left/right
 
-    struct RightArm
-    {
-        JointAngle elbowUp;
-        JointAngle elbowDown;
-    };
+        all thetas are accessible as a flat array of 36 thetas
+    */
 
     struct Wrist
     {
-        double theta1{};
-        double theta2{};
-        double theta3{};
+        double theta1;
+        double theta2;
+        double theta3;
     };
 
-    LeftArm leftArm;
-    RightArm rightArm;
-    Wrist wrist;
+    struct Elbow
+    {
+        double theta1;
+        double theta2;
+        double theta3;
+        Wrist wrist1;
+        Wrist wrist2;
+    };
+
+    struct Arm
+    {
+        Elbow up;
+        Elbow down;
+    };
+
+    union
+    {
+        struct
+        {
+            Arm right;
+            Arm left;
+        };
+        double thetas[36];
+    };
+
+    union ValidationFlags
+    {
+        struct
+        {
+            bool solution1_is_valid : 1;
+            bool solution2_is_valid : 1;
+            bool solution3_is_valid : 1;
+            bool solution4_is_valid : 1;
+            bool solution5_is_valid : 1;
+            bool solution6_is_valid : 1;
+            bool solution7_is_valid : 1;
+            bool solution8_is_valid : 1;
+        };
+        uint8_t bits;
+
+        constexpr ValidationFlags() : bits(0) {}
+    } validationFlags;
+
+    IKSolution() // had to manually zero everything to prevent weird values
+    {
+        for (double &theta : thetas)
+            theta = 0; // NAN; // now that this default value can be set to anything, maybe nan would be better?
+    }
 };
+#pragma pack(pop)
 
 struct Orientation
 {
