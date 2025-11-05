@@ -12,11 +12,11 @@ import os
 class MinimalClient(Node):
 
     def __init__(self):
-        super().__init__("pose_client")
-        self._client = self.create_client(SetPose, "set_pose")
+        super().__init__("set_pose_client")
+        self._client = self.create_client(SetPose, "set_pose_server")
 
         while not self._client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info("Waiting for 'set_pose' server...")
+            self.get_logger().info("Waiting for 'set_pose_server' server...")
 
         self._timer = self.create_timer(2.0, self._timer_callback)
 
