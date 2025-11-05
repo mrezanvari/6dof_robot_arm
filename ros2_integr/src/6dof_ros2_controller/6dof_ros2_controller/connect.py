@@ -6,7 +6,7 @@ import subprocess
 
 def get_esp_device():
     esp_port_manufacture = "Espressif"
-    docker_port = '/dev/ttyDocker'
+    docker_port = "/dev/ttyDocker"
 
     serial_ports = list(ports.comports())
 
@@ -23,7 +23,9 @@ def get_esp_device():
             print("Found", esp32_port)
             return esp32_port
 
-    esp32_port = esp32_connection[0].device.replace("cu", "tty")  # only tty works on mac but if cu works then remove this part
+    esp32_port = esp32_connection[0].device.replace(
+        "cu", "tty"
+    )  # only tty works on mac but if cu works then remove this part
     print("Found", esp32_port)
     return esp32_port
 
