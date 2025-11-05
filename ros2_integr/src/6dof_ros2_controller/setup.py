@@ -26,6 +26,7 @@ setup(
             "connect = 6dof_ros2_controller.connect:main",
             "server = 6dof_ros2_controller.server:main",
             "client = 6dof_ros2_controller.client:main",
+            "sub = 6dof_ros2_controller.subscriber:main",
         ],
     },
 )
