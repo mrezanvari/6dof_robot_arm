@@ -2,26 +2,22 @@ import serial
 import time
 import serial.tools.list_ports as ports
 import subprocess
+import os
 
 
-def get_esp_device():
+def get_esp_device() -> serial.Serial:
     esp_port_manufacture = "Espressif"
     docker_port = "/dev/ttyDocker"
+    if os.path.exists(docker_port):
+        print("Found", docker_port)
+        return docker_port
 
     serial_ports = list(ports.comports())
-
     esp32_connection = [i for i in serial_ports if i.manufacturer == esp_port_manufacture]
+
     if len(esp32_connection) == 0:
-        try:
-            tempSer = serial.Serial(docker_port)
-            tempSer.close()
-        except:
-            print("ERROR: ESP32 not connected!")
-            exit()
-        finally:
-            esp32_port = docker_port
-            print("Found", esp32_port)
-            return esp32_port
+        print("ERROR: ESP32 not connected!")
+        exit()
 
     esp32_port = esp32_connection[0].device.replace(
         "cu", "tty"
