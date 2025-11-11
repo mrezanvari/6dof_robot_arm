@@ -6,9 +6,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
 from custom_interfaces.msg import JointAngles
-
-# ROS_DOMAIN_ID = 123
-# os.environ["ROS_DOMAIN_ID"] = str(ROS_DOMAIN_ID)
+from six_dof_ros2_controller.ros_init import init_ros_domain_from_args
 
 SUBSCRIPTION_TOPIC = "joint_angles_topic"
 
@@ -39,6 +37,7 @@ class JointAngleSubscriber(Node):
 
 
 def main(args=None):
+    init_ros_domain_from_args(args)
     joint_angle_subscriber = None
     try:
         rclpy.init(args=args)

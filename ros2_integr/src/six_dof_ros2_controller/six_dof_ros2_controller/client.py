@@ -5,10 +5,9 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
-from custom_interfaces.srv import SetPose
 
-# ROS_DOMAIN_ID = 123
-# os.environ["ROS_DOMAIN_ID"] = str(ROS_DOMAIN_ID)
+from custom_interfaces.srv import SetPose
+from six_dof_ros2_controller.ros_init import init_ros_domain_from_args
 
 UPDATE_FREQ_S = 1.5
 
@@ -52,6 +51,7 @@ class SetPoseClient(Node):
 
 
 def main(args=None):
+    init_ros_domain_from_args(args)
     client_node = None
     try:
         rclpy.init(args=args)

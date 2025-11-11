@@ -6,9 +6,7 @@ from geometry_msgs.msg import Pose
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from tf_transformations import euler_from_quaternion
-
-# ROS_DOMAIN_ID = 123
-# os.environ["ROS_DOMAIN_ID"] = str(ROS_DOMAIN_ID)
+from six_dof_ros2_controller.ros_init import init_ros_domain_from_args
 
 SUBSCRIPTION_TOPIC = "pose_topic"
 
@@ -58,6 +56,7 @@ class PoseSubscriber(Node):
 
 
 def main(args=None):
+    init_ros_domain_from_args(args)
     pose_subscriber = None
     try:
         rclpy.init(args=args)

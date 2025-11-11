@@ -9,14 +9,12 @@ from tf_transformations import euler_from_quaternion, quaternion_from_euler
 from custom_interfaces.msg import JointAngles
 from custom_interfaces.srv import SetPose
 from six_dof_ros2_controller.serial_utils import ThreadedSerial, init_esp_serial
-
-# ROS_DOMAIN_ID = 123
-# os.environ["ROS_DOMAIN_ID"] = str(ROS_DOMAIN_ID)
+from six_dof_ros2_controller.ros_init import init_ros_domain_from_args
 
 JOINT_ANGLES_PUBLISH_TOPIC = "joint_angles_topic"
 POS_PUBLISH_TOPIC = "pose_topic"
 PUBLISHER_FREQ = 0.01
-BAUDRATE = 2000000
+BAUDRATE = 2000000  # somewhat irrelevant since ESP CDC UART uses max USB1.1 speed
 
 pattern_xyz = r"x:(-?\d+\.\d+)\s+y:(-?\d+\.\d+)\s+z:(-?\d+\.\d+)"
 pattern_joint_thetas = (
@@ -122,6 +120,9 @@ class SetPoseServer(Node):
 
 
 def main(args=None):
+
+    init_ros_domain_from_args(args)
+
     server_node = None
     joint_angle_publisher_node = None
     pose_publisher_node = None
