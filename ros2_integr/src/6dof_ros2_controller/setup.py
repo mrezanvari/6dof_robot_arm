@@ -26,7 +26,8 @@ setup(
             "connect = 6dof_ros2_controller.connect:main",
             "server = 6dof_ros2_controller.server:main",
             "client = 6dof_ros2_controller.client:main",
-            "sub = 6dof_ros2_controller.subscriber:main",
+            "sub.pose = 6dof_ros2_controller.subscriber_pose:main",
+            "sub.joints = 6dof_ros2_controller.subscriber_joint_angles:main",
         ],
     },
 )

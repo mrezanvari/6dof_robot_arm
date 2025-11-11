@@ -8,6 +8,8 @@ import os
 # ROS_DOMAIN_ID = 123
 # os.environ["ROS_DOMAIN_ID"] = str(ROS_DOMAIN_ID)
 
+UPDATE_FREQ_S = 2.0
+
 
 class MinimalClient(Node):
 
@@ -18,7 +20,7 @@ class MinimalClient(Node):
         while not self._client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("Waiting for 'set_pose_server' server...")
 
-        self._timer = self.create_timer(2.0, self._timer_callback)
+        self._timer = self.create_timer(UPDATE_FREQ_S, self._timer_callback)
 
     def _timer_callback(self):
         req = SetPose.Request()
