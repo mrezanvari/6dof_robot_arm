@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = "6dof_ros2_controller"
+package_name = "six_dof_ros2_controller"
 
 setup(
     name=package_name,
@@ -23,11 +23,11 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "connect = 6dof_ros2_controller.connect:main",
-            "server = 6dof_ros2_controller.server:main",
-            "client = 6dof_ros2_controller.client:main",
-            "sub.pose = 6dof_ros2_controller.subscriber_pose:main",
-            "sub.joints = 6dof_ros2_controller.subscriber_joint_angles:main",
+            "connect = six_dof_ros2_controller.connect:main",
+            "server = six_dof_ros2_controller.server:main",
+            "client = six_dof_ros2_controller.client:main",
+            "sub.pose = six_dof_ros2_controller.subscriber_pose:main",
+            "sub.joints = six_dof_ros2_controller.subscriber_joint_angles:main",
         ],
     },
 )
