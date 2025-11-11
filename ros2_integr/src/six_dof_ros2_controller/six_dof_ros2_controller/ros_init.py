@@ -5,8 +5,9 @@ from rclpy.utilities import remove_ros_args
 def parse_custom_args(args) -> dict:
     """Converts all non-ros args into a dict for custom user input"""
     args_raw = remove_ros_args(args)
-    args_list = args_raw[1:]
     args_dict = {}
+    args_dict["entry_point"] = args_raw[0].split("/")[-1]
+    args_list = args_raw[1:]
 
     current_key = ""
     for item in args_list:
@@ -26,7 +27,7 @@ def init_ros_domain_from_args(args, domain_id_arg_key="domain-id"):
     args_dict = parse_custom_args(args)
     print("ROS_DOMAIN_ID set to: ", end="")
     if "domain-id" in list(args_dict.keys()):
-        os.environ["ROS_DOMAIN_ID"] = str(args_dict[domain_id_arg_key])
+        set_ros_domain_id(args_dict[domain_id_arg_key])
         print(args_dict["domain-id"])
     else:
         print("DEFAULT:0 -> domain-id argument not found")
