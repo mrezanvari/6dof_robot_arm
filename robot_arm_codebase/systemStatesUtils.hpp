@@ -36,8 +36,9 @@ MotorPosition currentPosition;
 MotorPosition currentMotorPosition;
 bool mayProceed = false;
 double globalVelocity = 0.7, globalAccel = 5;
-pair<Coor, vector<Matrix4d>> FK_out;
+pair<pair<Coor, Orientation>, vector<Matrix4d>> FK_out;
 Coor FK_coor;
+Orientation FK_orientation;
 MatrixXd J;
 JacobiSVD<MatrixXd> J_svd;
 Vector3d velocities_last;
@@ -57,6 +58,7 @@ Coor tempPos;
 Orientation tempOrientation;
 Coor diffCoor;
 double globalJacobiGain = 4;
+JointAngle currentJointAngles;
 
 Orientation devOrientation(
     rad(90),
@@ -415,25 +417,43 @@ void system_run()
         wristLowerJointMotor.last_result().values.position,
         wristUpperJointMotor.last_result().values.position);
 
-    FK_out = FK(currentMotorPosition.toJointAngle());
-    FK_coor = FK_out.first;
+    currentJointAngles = currentMotorPosition.toJointAngle();
+    FK_out = FK(currentJointAngles);
+    FK_coor = FK_out.first.first.toYUp();
+    FK_orientation = FK_out.first.second;
 
-    Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f │ FK x:% 3.3f y:% 3.3f z:% 3.3f │ orientation phi:% 3.3f theta:% 3.3f psi:% 3.3f │ trajectory_complete: [%1d, %1d, %1d, %1d, %1d, %1d]\r\n",
-                  globalUserPos.x,
-                  globalUserPos.y,
-                  globalUserPos.z,
-                  FK_coor.x,
-                  FK_coor.y,
+    // Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f │ FK x:% 3.3f y:% 3.3f z:% 3.3f │ orientation phi:% 3.3f theta:% 3.3f psi:% 3.3f │ trajectory_complete: [%1d, %1d, %1d, %1d, %1d, %1d]\r\n",
+    //               globalUserPos.x,
+    //               globalUserPos.y,
+    //               globalUserPos.z,
+    //               FK_coor.x,
+    //               FK_coor.y,
+    //               FK_coor.z,
+    //               deg(globalUserOrientation.phi),
+    //               deg(globalUserOrientation.theta),
+    //               deg(globalUserOrientation.psi),
+    //               baseJointMotor.last_result().values.trajectory_complete,
+    //               lowerJointMotor.last_result().values.trajectory_complete,
+    //               upperJointMotor.last_result().values.trajectory_complete,
+    //               wristBaseJointMotor.last_result().values.trajectory_complete,
+    //               wristLowerJointMotor.last_result().values.trajectory_complete,
+    //               wristUpperJointMotor.last_result().values.trajectory_complete);
+
+    
+
+    Serial.printf("x:%f y:%f z:%f | phi:%f theta:%f psi:%f | t1:%f t2:%f t3:%f t4:%f t5:%f t6:%f\r\n", 
+                  FK_coor.x, 
+                  FK_coor.y, 
                   FK_coor.z,
-                  deg(globalUserOrientation.phi),
-                  deg(globalUserOrientation.theta),
-                  deg(globalUserOrientation.psi),
-                  baseJointMotor.last_result().values.trajectory_complete,
-                  lowerJointMotor.last_result().values.trajectory_complete,
-                  upperJointMotor.last_result().values.trajectory_complete,
-                  wristBaseJointMotor.last_result().values.trajectory_complete,
-                  wristLowerJointMotor.last_result().values.trajectory_complete,
-                  wristUpperJointMotor.last_result().values.trajectory_complete);
+                  FK_orientation.phi,
+                  FK_orientation.theta,
+                  FK_orientation.psi,
+                  currentJointAngles.theta1,
+                  currentJointAngles.theta2,
+                  currentJointAngles.theta3,
+                  currentJointAngles.theta4,
+                  currentJointAngles.theta5,
+                  currentJointAngles.theta6);
 
     delay(updteInterval);
     break;
@@ -453,7 +473,7 @@ void system_run()
         wristLowerJointMotor.last_result().values.position,
         wristUpperJointMotor.last_result().values.position);
 
-    JointAngle currentJointAngles = currentMotorPosition.toJointAngle();
+    currentJointAngles = currentMotorPosition.toJointAngle();
 
     if (mayProceed)
     {
@@ -469,27 +489,24 @@ void system_run()
     }
 
     FK_out = FK(currentJointAngles);
-    FK_coor = FK_out.first;
+    FK_coor = FK_out.first.first.toYUp();
+    FK_orientation = FK_out.first.second;
     J = createJacobianMatrix(FK_out.second);
-    auto singular_out = IsSingular(J);
-    bool isAtSingularity = singular_out.first;
     VectorXd jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, globalJacobiGain, 2);
 
-    Serial.printf("x:% .3f y:% .3f z:% .3f │ v1:% .3f v2:% .3f v3:% .3f v4:% .3f v5:% .3f v6:% .3f | ∞: %d | phi:% .3f theta:% .3f psi:% .3f | %s\r\n",
-                  FK_coor.x,
-                  FK_coor.y,
+    Serial.printf("x:%f y:%f z:%f | phi:%f theta:%f psi:%f | t1:%f t2:%f t3:%f t4:%f t5:%f t6:%f\r\n", 
+                  FK_coor.x, 
+                  FK_coor.y, 
                   FK_coor.z,
-                  jointVelocities(0),
-                  jointVelocities(1),
-                  jointVelocities(2),
-                  jointVelocities(3),
-                  jointVelocities(4),
-                  jointVelocities(5),
-                  isAtSingularity,
-                  deg(tempOrientation.phi),
-                  deg(tempOrientation.theta),
-                  deg(tempOrientation.psi),
-                  bitset<8>(targetIK.validationFlags.bits).to_string().c_str());
+                  FK_orientation.phi,
+                  FK_orientation.theta,
+                  FK_orientation.psi,
+                  currentJointAngles.theta1,
+                  currentJointAngles.theta2,
+                  currentJointAngles.theta3,
+                  currentJointAngles.theta4,
+                  currentJointAngles.theta5,
+                  currentJointAngles.theta6);
 
     setMotorVelocity(baseJointMotor, jointVelocities(0));
     setMotorVelocity(lowerJointMotor, jointVelocities(1));
@@ -531,27 +548,27 @@ void system_run()
         wristLowerJointMotor.last_result().values.position,
         wristUpperJointMotor.last_result().values.position);
 
-    FK_out = FK(currentMotorPosition.toJointAngle());
-    FK_coor = FK_out.first;
+    currentJointAngles = currentMotorPosition.toJointAngle();
+    FK_out = FK(currentJointAngles);
+    FK_coor = FK_out.first.first.toYUp();
+    FK_orientation = FK_out.first.second;
     J = createJacobianMatrix(FK_out.second);
-    J_svd.compute(J, ComputeThinU | ComputeThinV);
     auto singular_out = IsSingular(J);
     bool isAtSingularity = singular_out.first;
 
-    Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f │ θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f deg | ∞: %d │ rank: %d | J11 det: % 10.8f J22 det:% .20G\r\n",
-                  FK_coor.x,
-                  FK_coor.y,
+    Serial.printf("x:%f y:%f z:%f | phi:%f theta:%f psi:%f | t1:%f t2:%f t3:%f t4:%f t5:%f t6:%f\r\n", 
+                  FK_coor.x, 
+                  FK_coor.y, 
                   FK_coor.z,
-                  deg(mpos2rad(baseJointMotor.last_result().values.position)),
-                  deg(mpos2rad(lowerJointMotor.last_result().values.position)),
-                  deg(mpos2rad(upperJointMotor.last_result().values.position)),
-                  deg(wmpos2rad(wristBaseJointMotor.last_result().values.position)),
-                  deg(wmpos2rad(wristLowerJointMotor.last_result().values.position)),
-                  deg(wmpos2rad(wristUpperJointMotor.last_result().values.position)),
-                  isAtSingularity,
-                  J_svd.rank(),
-                  singular_out.second.first,
-                  singular_out.second.second);
+                  FK_orientation.phi,
+                  FK_orientation.theta,
+                  FK_orientation.psi,
+                  currentJointAngles.theta1,
+                  currentJointAngles.theta2,
+                  currentJointAngles.theta3,
+                  currentJointAngles.theta4,
+                  currentJointAngles.theta5,
+                  currentJointAngles.theta6);
 
     rgbLedWrite(RGB_BUILTIN, 255 * isAtSingularity, 0, 0);
 
@@ -625,7 +642,7 @@ void system_run()
         wristUpperJointMotor.last_result().values.position);
 
     FK_out = FK(currentMotorPosition.toJointAngle());
-    FK_coor = FK_out.first;
+    FK_coor = FK_out.first.first;
     J = createJacobianMatrix(FK_out.second);
     auto singular_out = IsSingular(J);
     bool isAtSingularity = singular_out.first;
