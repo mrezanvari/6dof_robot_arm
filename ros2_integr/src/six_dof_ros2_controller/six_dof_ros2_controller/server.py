@@ -124,7 +124,7 @@ class SetPoseServer(Node):
 
 
 def init_robot(serial_conn: ThreadedSerial):
-    serial_conn.entry_point.send("set gain 8\r\n")
+    serial_conn.entry_point.send("set gain 6\r\n")
     time.sleep(1)
     serial_conn.entry_point.send("jacobi\r\n")
     time.sleep(1)
