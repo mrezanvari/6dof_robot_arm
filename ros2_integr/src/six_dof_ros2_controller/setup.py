@@ -23,11 +23,12 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "connect = six_dof_ros2_controller.connect:main",
             "server = six_dof_ros2_controller.server:main",
             "client = six_dof_ros2_controller.client:main",
             "sub.pose = six_dof_ros2_controller.subscriber_pose:main",
             "sub.joints = six_dof_ros2_controller.subscriber_joint_angles:main",
+            "dev.connect = six_dof_ros2_controller.dev.connect:main",
+            "dev.client = six_dof_ros2_controller.dev.client_dev:main",
         ],
     },
 )
