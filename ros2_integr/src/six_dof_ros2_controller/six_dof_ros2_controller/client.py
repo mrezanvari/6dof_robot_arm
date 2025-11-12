@@ -4,12 +4,50 @@ import random
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-
+from math import degrees, radians
 
 from custom_interfaces.srv import SetPose
+from geometry_msgs.msg import Pose
+from tf_transformations import quaternion_from_euler
 from six_dof_ros2_controller.ros_init import init_ros_domain_from_args
 
-UPDATE_FREQ_S = 1.5
+UPDATE_FREQ_S = 8
+
+
+base_pose = Pose()
+base_pose.position.x = 410.0
+base_pose.position.y = 215.0
+base_pose.position.z = 0.0
+base_orientation_quaternion = quaternion_from_euler(radians(90), radians(60), 0, "rzyz")
+base_pose.orientation.x = base_orientation_quaternion[0]
+base_pose.orientation.y = base_orientation_quaternion[1]
+base_pose.orientation.z = base_orientation_quaternion[2]
+base_pose.orientation.w = base_orientation_quaternion[3]
+
+other_pose = Pose()
+other_pose.position.x = 410.0
+other_pose.position.y = 215.0
+other_pose.position.z = 0.0
+base_orientation_quaternion = quaternion_from_euler(radians(90), radians(170), 0, "rzyz")
+other_pose.orientation.x = base_orientation_quaternion[0]
+other_pose.orientation.y = base_orientation_quaternion[1]
+other_pose.orientation.z = base_orientation_quaternion[2]
+other_pose.orientation.w = base_orientation_quaternion[3]
+
+
+pose_list = [
+    base_pose,
+    other_pose,
+]
+
+pose_indx = 0
+
+
+def increment_pose():
+    global pose_indx
+    out_pose = pose_list[pose_indx]
+    pose_indx = pose_indx + 1 if (len(pose_list) - 1) > pose_indx else 0
+    return out_pose
 
 
 class SetPoseClient(Node):
@@ -26,14 +64,7 @@ class SetPoseClient(Node):
     def _timer_callback(self):
         req = SetPose.Request()
         req.id = random.randint(0, 5000)
-        req.pose.position.x = random.uniform(-250, 250)
-        req.pose.position.y = random.uniform(0, 100)
-        req.pose.position.z = random.uniform(0, 250)
-
-        req.pose.orientation.x = random.uniform(0, 180)
-        req.pose.orientation.y = random.uniform(0, 180)
-        req.pose.orientation.z = random.uniform(0, 180)
-        req.pose.orientation.w = random.uniform(0, 250)
+        req.pose = increment_pose()
 
         self.get_logger().info(
             f"Sending Position: x={req.pose.position.x:,.2f}, y={req.pose.position.y:,.2f}, z={req.pose.position.z:,.2f}"

@@ -10,6 +10,8 @@ from custom_interfaces.msg import JointAngles
 from custom_interfaces.srv import SetPose
 from six_dof_ros2_controller.serial_utils import ThreadedSerial, init_esp_serial
 from six_dof_ros2_controller.ros_init import init_ros_domain_from_args
+from math import degrees
+import time
 
 JOINT_ANGLES_PUBLISH_TOPIC = "joint_angles_topic"
 POS_PUBLISH_TOPIC = "pose_topic"
@@ -78,6 +80,7 @@ class PosePublisher(Node):
                 float(orientation_match.group(1)),
                 float(orientation_match.group(2)),
                 float(orientation_match.group(3)),
+                "rzyz",
             )
 
             msg.orientation.x = orientation_quaternion[0]
@@ -107,16 +110,22 @@ class SetPoseServer(Node):
 
         orientation_quaternion = pose.orientation
         orientation_euler = euler_from_quaternion(
-            [orientation_quaternion.x, orientation_quaternion.y, orientation_quaternion.z, orientation_quaternion.w]
+            [orientation_quaternion.x, orientation_quaternion.y, orientation_quaternion.z, orientation_quaternion.w],
+            "rzyz",
         )
 
-        msg = f"set pos {pose.position.x} {pose.position.y} {pose.position.z} {orientation_euler[0]} {orientation_euler[1]} {orientation_euler[2]}\r\n"
+        msg = f"set pos {pose.position.x} {pose.position.y} {pose.position.z} {degrees(orientation_euler[0])} {degrees(orientation_euler[1])} {degrees(orientation_euler[2])}\r\n"
         self.serial_protocol.send(msg)
 
         resp.success = True
         resp.id = req.id
         resp.msg = f"x={pose.position.x:,.2f}, y={pose.position.y:,.2f}, z={pose.position.z:,.2f}"
         return resp
+
+
+def init_robot(serial_conn: ThreadedSerial):
+    serial_conn.entry_point.send("jacobi\r\n")
+    time.sleep(5)
 
 
 def main(args=None):
@@ -128,6 +137,8 @@ def main(args=None):
     pose_publisher_node = None
     try:
         serial_connection_thread = init_esp_serial(BAUDRATE, True)
+        init_robot(serial_connection_thread)
+
         rclpy.init(args=args)
 
         server_node = SetPoseServer(serial_connection_thread)

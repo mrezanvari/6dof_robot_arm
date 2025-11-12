@@ -42,7 +42,7 @@ class PoseSubscriber(Node):
             pose_dict["orientation"]["w"],
         )
 
-        phi, theta, psi = euler_from_quaternion(q)
+        phi, theta, psi = euler_from_quaternion(q, "rzyz")
         orientation_dict = {"phi": phi, "theta": theta, "psi": psi}
 
         out_buff = ""
