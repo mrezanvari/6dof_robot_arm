@@ -14,30 +14,62 @@ from six_dof_ros2_controller.ros_init import init_ros_domain_from_args
 UPDATE_FREQ_S = 8
 
 
-base_pose = Pose()
-base_pose.position.x = 410.0
-base_pose.position.y = 215.0
-base_pose.position.z = 0.0
-base_orientation_quaternion = quaternion_from_euler(radians(90), radians(60), 0, "rzyz")
-base_pose.orientation.x = base_orientation_quaternion[0]
-base_pose.orientation.y = base_orientation_quaternion[1]
-base_pose.orientation.z = base_orientation_quaternion[2]
-base_pose.orientation.w = base_orientation_quaternion[3]
+pose0 = Pose()
+pose0.position.x = 410.0
+pose0.position.y = 215.0
+pose0.position.z = 0.0
+pose_orientation_quaternion = quaternion_from_euler(radians(90), radians(60), 0, "rzyz")
+pose0.orientation.x = pose_orientation_quaternion[0]
+pose0.orientation.y = pose_orientation_quaternion[1]
+pose0.orientation.z = pose_orientation_quaternion[2]
+pose0.orientation.w = pose_orientation_quaternion[3]
 
-other_pose = Pose()
-other_pose.position.x = 410.0
-other_pose.position.y = 215.0
-other_pose.position.z = 0.0
-base_orientation_quaternion = quaternion_from_euler(radians(90), radians(170), 0, "rzyz")
-other_pose.orientation.x = base_orientation_quaternion[0]
-other_pose.orientation.y = base_orientation_quaternion[1]
-other_pose.orientation.z = base_orientation_quaternion[2]
-other_pose.orientation.w = base_orientation_quaternion[3]
+pose1 = Pose()
+pose1.position.x = 410.0
+pose1.position.y = 215.0
+pose1.position.z = 0.0
+pose_orientation_quaternion = quaternion_from_euler(radians(90), radians(170), 0, "rzyz")
+pose1.orientation.x = pose_orientation_quaternion[0]
+pose1.orientation.y = pose_orientation_quaternion[1]
+pose1.orientation.z = pose_orientation_quaternion[2]
+pose1.orientation.w = pose_orientation_quaternion[3]
+
+home_pose = Pose()
+home_pose.position.x = 410.0
+home_pose.position.y = 215.0
+home_pose.position.z = 0.0
+pose_orientation_quaternion = quaternion_from_euler(radians(90), radians(90), 0, "rzyz")
+home_pose.orientation.x = pose_orientation_quaternion[0]
+home_pose.orientation.y = pose_orientation_quaternion[1]
+home_pose.orientation.z = pose_orientation_quaternion[2]
+home_pose.orientation.w = pose_orientation_quaternion[3]
+
+pose2 = Pose()
+pose2.position.x = 410.0
+pose2.position.y = 215.0
+pose2.position.z = -200.0
+pose2.orientation.x = pose_orientation_quaternion[0]
+pose2.orientation.y = pose_orientation_quaternion[1]
+pose2.orientation.z = pose_orientation_quaternion[2]
+pose2.orientation.w = pose_orientation_quaternion[3]
+
+pose3 = Pose()
+pose3.position.x = 410.0
+pose3.position.y = 215.0
+pose3.position.z = 200.0
+pose3.orientation.x = pose_orientation_quaternion[0]
+pose3.orientation.y = pose_orientation_quaternion[1]
+pose3.orientation.z = pose_orientation_quaternion[2]
+pose3.orientation.w = pose_orientation_quaternion[3]
 
 
 pose_list = [
-    base_pose,
-    other_pose,
+    pose0,
+    pose1,
+    home_pose,
+    pose2,
+    pose3,
+    home_pose,
 ]
 
 pose_indx = 0
