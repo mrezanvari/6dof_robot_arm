@@ -62,6 +62,15 @@ pose3.orientation.y = pose_orientation_quaternion[1]
 pose3.orientation.z = pose_orientation_quaternion[2]
 pose3.orientation.w = pose_orientation_quaternion[3]
 
+pose4 = Pose()
+pose4.position.x = 410.0
+pose4.position.y = 515.0
+pose4.position.z = 0.0
+pose4.orientation.x = pose_orientation_quaternion[0]
+pose4.orientation.y = pose_orientation_quaternion[1]
+pose4.orientation.z = pose_orientation_quaternion[2]
+pose4.orientation.w = pose_orientation_quaternion[3]
+
 
 pose_list = [
     pose0,
@@ -69,6 +78,8 @@ pose_list = [
     home_pose,
     pose2,
     pose3,
+    home_pose,
+    pose4,
     home_pose,
 ]
 
