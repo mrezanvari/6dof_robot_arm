@@ -77,8 +77,8 @@ VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &d
   vector<Matrix4d> currentFrames = currentFK_out.second;
   vector<Matrix4d> desiredFrames = desiredFK_out.second;
 
-  Coor currentPos = currentFK_out.first;
-  Coor desiredPos = desiredFK_out.first;
+  Coor currentPos = currentFK_out.first.first;
+  Coor desiredPos = desiredFK_out.first.first;
   Coor errorPos = desiredPos - currentPos;
 
   Matrix3d currentRotation = currentFrames.back().block<3, 3>(0, 0);
