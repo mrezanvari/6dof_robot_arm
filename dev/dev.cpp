@@ -60,7 +60,7 @@ int main()
            deg(testAngle.theta5),
            deg(testAngle.theta6));
     auto FK_out = FK(testAngle);
-    Coor FK_coor = FK_out.first;
+    Coor FK_coor = FK_out.first.first;
 
     vector<Matrix4d> frames = FK_out.second;
 
@@ -148,7 +148,7 @@ int main()
     FK_out = FK(testAngle);
     frames = FK_out.second;
 
-    printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
+    printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.first.x, FK_out.first.first.y, FK_out.first.first.z);
 
     Matrix4d Tn = frames.back();
     Matrix3d Rn = Tn.block<3, 3>(0, 0);
@@ -157,8 +157,8 @@ int main()
     double phi = atan2(Rn(1, 2), Rn(0, 2));
     double psi = atan2(Rn(2, 1), -Rn(2, 0));
 
-    // Vector3d O = FK_out.first.toMeter().toVector3d();
-    Vector3d O = FK_out.first.toVector3d();
+    // Vector3d O = FK_out.first.first.toMeter().toVector3d();
+    Vector3d O = FK_out.first.first.toVector3d();
     phi = rad(134.54487);  // 134.54487
     theta = rad(56.02402); // 56.02402
     psi = rad(0);
@@ -204,7 +204,7 @@ int main()
 
     printf("IK Out ->          θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f\r\n", deg(tempAngle.theta1), deg(tempAngle.theta2), deg(tempAngle.theta3), deg(tempAngle.theta4), deg(tempAngle.theta5), deg(tempAngle.theta6));
     FK_out = FK(tempAngle);
-    printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
+    printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.first.x, FK_out.first.first.y, FK_out.first.first.z);
 
     cout << "────────────────" << endl;
     cout << "New 3DoF IK Solver:" << endl;
@@ -246,7 +246,7 @@ int main()
 
     printf("IK Out ->          θ1: %1.3f θ2: %1.3f θ3: %1.3f θ4: %1.3f θ5: %1.3f θ6: %1.3f\r\n", deg(IKOut.theta1), deg(IKOut.theta2), deg(IKOut.theta3), deg(IKOut.theta4), deg(IKOut.theta5), deg(IKOut.theta6));
     FK_out = FK(IKOut);
-    printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
+    printf("FK Coor->      x= %.3f y= %.3f z= %.3f\r\n", FK_out.first.first.x, FK_out.first.first.y, FK_out.first.first.z);
 
     if (!fullIK_out)
         cout << "You shall not pass!" << endl
@@ -360,7 +360,7 @@ int main()
     drawSectionLine("6 DoF IK with offset following textbook"); // ──────────────────────────────────────────────────────────────────────────────────────────────────────────
     IK(newIKCoor, newOrientation, &IKOut);
     FK_out = FK(IKOut);
-    printf("FK Coor->      x=% .3f y=% .3f z=% .3f\r\n", FK_out.first.x, FK_out.first.y, FK_out.first.z);
+    printf("FK Coor->      x=% .3f y=% .3f z=% .3f\r\n", FK_out.first.first.x, FK_out.first.first.y, FK_out.first.first.z);
     printf("IK Out ->                   θ1:% .3f θ2:% .3f θ3:% .3f θ4:% .3f θ5:% .3f θ6:% .3f\r\n\r\n", deg(IKOut.theta1), deg(IKOut.theta2), deg(IKOut.theta3), deg(IKOut.theta4), deg(IKOut.theta5), deg(IKOut.theta6));
 
     IKOut = JointAngle();
@@ -437,7 +437,7 @@ int main()
         rad(0)};
 
     auto currentFK_out = FK(currentAngles);
-    Coor currentPos = currentFK_out.first;
+    Coor currentPos = currentFK_out.first.first;
     Coor desiredPos = currentPos;
     desiredPos.y += 1;
 
@@ -702,7 +702,7 @@ int main()
 
         currentMotorPosition = currentJointAngles.toMotorPosition();
         FK_out = FK(currentMotorPosition.toJointAngle());
-        FK_coor = FK_out.first;
+        FK_coor = FK_out.first.first;
         J = createJacobianMatrix(FK_out.second);
         auto singular_out = IsSingular(J, 1e-4);
         isAtSingularity = singular_out.first;
@@ -821,7 +821,7 @@ int main()
 
         currentMotorPosition = currentJointAngles.toMotorPosition();
         FK_out = FK(currentMotorPosition.toJointAngle());
-        FK_coor = FK_out.first;
+        FK_coor = FK_out.first.first;
         J = createJacobianMatrix(FK_out.second);
         auto singular_out = IsSingular(J, 1e-4);
         isAtSingularity = singular_out.first;
@@ -940,7 +940,7 @@ int main()
     {
         currentJointAngles = currentMotorPosition.toJointAngle();
         FK_out = FK(currentJointAngles);
-        FK_coor = FK_out.first;
+        FK_coor = FK_out.first.first;
         J = createJacobianMatrix(FK_out.second);
         VectorXd jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, 0.005);
 
@@ -1059,7 +1059,7 @@ int main()
 
         currentJointAngles = currentMotorPosition.toJointAngle();
         FK_out = FK(currentJointAngles);
-        FK_coor = FK_out.first;
+        FK_coor = FK_out.first.first;
         J = createJacobianMatrix(FK_out.second);
         VectorXd jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, 0.2); // gain really high because the delta is too low
 
