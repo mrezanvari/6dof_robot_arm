@@ -69,6 +69,15 @@ VectorXd extractJointRelation(const MatrixXd &J, const VectorXd &v)
   return J_inv * v;
 }
 
+VectorXd scaleJointVelocities(VectorXd &newVelocities, const double gain = 1, const double clamp = 2)
+{
+  newVelocities /= 2 * M_PI;
+  newVelocities *= gain;
+  newVelocities = newVelocities.cwiseMin(clamp).cwiseMax(-clamp);
+
+  return newVelocities;
+}
+
 VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &desiredAngles, const double gain = 1, const double clamp = 2)
 {
   auto currentFK_out = FK(currentAngles);
@@ -93,9 +102,7 @@ VectorXd getJointVelocities(const JointAngle &currentAngles, const JointAngle &d
   v.tail(3) = errorRotatationVector;
 
   VectorXd newVelocities = extractJointRelation(J, v);
-  newVelocities /= 2 * M_PI;
-  newVelocities *= gain;
-  newVelocities = newVelocities.cwiseMin(clamp).cwiseMax(-clamp);
+  scaleJointVelocities(newVelocities, gain, clamp);
 
   return newVelocities;
 }

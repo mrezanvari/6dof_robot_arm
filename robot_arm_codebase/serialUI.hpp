@@ -156,6 +156,7 @@ void checkSerial()
         tempOrientation.psi = cmd[7].equalsIgnoreCase("nan") ? tempOrientation.psi : rad(cmd[7].toDouble());
       }
 
+      //  very important to set all trace to 0 to move to correct position properly
       globalTraceCoor.x = 0;
       globalTraceCoor.y = 0;
       globalTraceCoor.z = 0;
