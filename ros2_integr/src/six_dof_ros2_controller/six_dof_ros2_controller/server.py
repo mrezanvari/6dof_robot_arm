@@ -30,6 +30,68 @@ pattern_joint_thetas = (
 pattern_orientation = r"phi:(-?\d+\.\d+)\s+theta:(-?\d+\.\d+)\s+psi:(-?\d+\.\d+)\s+"
 
 
+class SetPoseServer(Node):
+
+    def __init__(self, serial_protocol: ThreadedSerial):
+        super().__init__("set_pose_server")
+        self._srv = self.create_service(SetPose, "set_pose_server", self._server_callback)
+        self.serial_protocol = serial_protocol.entry_point
+        self.get_logger().info("Server Ready...")
+
+    def _server_callback(self, req, resp):
+        pose = req.pose
+        self.get_logger().info(
+            f"Request {req.id} Position: x={pose.position.x:,.2f}, y={pose.position.y:,.2f}, z={pose.position.z:,.2f}"
+        )
+        # self.get_logger().info(
+        #     f"Orientation: x={pose.orientation.x}, y={pose.orientation.y}, z={pose.orientation.z}, w={pose.orientation.w}"
+        # )
+
+        orientation_quaternion = pose.orientation
+        orientation_euler = euler_from_quaternion(
+            [orientation_quaternion.x, orientation_quaternion.y, orientation_quaternion.z, orientation_quaternion.w],
+            "rzyz",
+        )
+
+        msg = f"set pos {pose.position.x} {pose.position.y} {pose.position.z} {degrees(orientation_euler[0])} {degrees(orientation_euler[1])} {degrees(orientation_euler[2])}\r\n"
+        self.serial_protocol.send(msg)
+
+        resp.success = True
+        resp.id = req.id
+        resp.msg = f"x={pose.position.x:,.2f}, y={pose.position.y:,.2f}, z={pose.position.z:,.2f}"
+        return resp
+
+
+class SetTraceServer(Node):
+
+    def __init__(self, serial_protocol: ThreadedSerial):
+        super().__init__("set_trace_server")
+        self._srv = self.create_service(SetPose, "set_trace_server", self._server_callback)
+        self.serial_protocol = serial_protocol.entry_point
+        self.get_logger().info("Server Ready...")
+
+    def _server_callback(self, req, resp):
+        pose = req.pose
+
+        orientation_quaternion = pose.orientation
+        orientation_euler = euler_from_quaternion(
+            [orientation_quaternion.x, orientation_quaternion.y, orientation_quaternion.z, orientation_quaternion.w],
+            "rxyz",
+        )
+
+        log_msg = f"{pose.position.x:,.2f} {pose.position.y:,.2f} {pose.position.z:,.2f} {orientation_euler[0]:,.2f} {orientation_euler[1]:,.2f} {orientation_euler[2]:,.2f}"
+
+        self.get_logger().info(f"Request {req.id} trace: {log_msg}")
+
+        msg = f"set trace {pose.position.x} {pose.position.y} {pose.position.z} {orientation_euler[0]} {orientation_euler[1]} {orientation_euler[2]}\r\n"
+        self.serial_protocol.send(msg)
+
+        resp.success = True
+        resp.id = req.id
+        resp.msg = log_msg
+        return resp
+
+
 class JointAnglePublisher(Node):
 
     def __init__(self, serial_connection: ThreadedSerial, publishing_freq: int):
@@ -91,38 +153,6 @@ class PosePublisher(Node):
             self.publisher_.publish(msg)
 
 
-class SetPoseServer(Node):
-
-    def __init__(self, serial_protocol: ThreadedSerial):
-        super().__init__("set_pose_server")
-        self._srv = self.create_service(SetPose, "set_pose_server", self._server_callback)
-        self.serial_protocol = serial_protocol.entry_point
-        self.get_logger().info("Server Ready...")
-
-    def _server_callback(self, req, resp):
-        pose = req.pose
-        self.get_logger().info(
-            f"Request {req.id} Position: x={pose.position.x:,.2f}, y={pose.position.y:,.2f}, z={pose.position.z:,.2f}"
-        )
-        # self.get_logger().info(
-        #     f"Orientation: x={pose.orientation.x}, y={pose.orientation.y}, z={pose.orientation.z}, w={pose.orientation.w}"
-        # )
-
-        orientation_quaternion = pose.orientation
-        orientation_euler = euler_from_quaternion(
-            [orientation_quaternion.x, orientation_quaternion.y, orientation_quaternion.z, orientation_quaternion.w],
-            "rzyz",
-        )
-
-        msg = f"set pos {pose.position.x} {pose.position.y} {pose.position.z} {degrees(orientation_euler[0])} {degrees(orientation_euler[1])} {degrees(orientation_euler[2])}\r\n"
-        self.serial_protocol.send(msg)
-
-        resp.success = True
-        resp.id = req.id
-        resp.msg = f"x={pose.position.x:,.2f}, y={pose.position.y:,.2f}, z={pose.position.z:,.2f}"
-        return resp
-
-
 def init_robot(serial_conn: ThreadedSerial):
     serial_conn.entry_point.send("set gain 6\r\n")
     time.sleep(1)
@@ -134,7 +164,8 @@ def main(args=None):
 
     init_ros_domain_from_args(args)
 
-    server_node = None
+    server_pose_node = None
+    server_trace_node = None
     joint_angle_publisher_node = None
     pose_publisher_node = None
     try:
@@ -143,12 +174,14 @@ def main(args=None):
 
         rclpy.init(args=args)
 
-        server_node = SetPoseServer(serial_connection_thread)
+        server_pose_node = SetPoseServer(serial_connection_thread)
+        server_trace_node = SetTraceServer(serial_connection_thread)
         joint_angle_publisher_node = JointAnglePublisher(serial_connection_thread, PUBLISHER_FREQ)
         pose_publisher_node = PosePublisher(serial_connection_thread, PUBLISHER_FREQ)
 
         executor = MultiThreadedExecutor()
-        executor.add_node(server_node)
+        executor.add_node(server_pose_node)
+        executor.add_node(server_trace_node)
         executor.add_node(joint_angle_publisher_node)
         executor.add_node(pose_publisher_node)
 
@@ -156,8 +189,10 @@ def main(args=None):
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
-        if server_node is not None:
-            server_node.destroy_node()
+        if server_pose_node is not None:
+            server_pose_node.destroy_node()
+        if server_trace_node is not None:
+            server_trace_node.destroy_node()
         if joint_angle_publisher_node is not None:
             joint_angle_publisher_node.destroy_node()
         if pose_publisher_node is not None:
