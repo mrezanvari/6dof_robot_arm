@@ -33,11 +33,10 @@ class SetPoseDSClient(Node):
         self._client_trace = self.create_client(SetPose, "set_trace_server")
         self._client_pose = self.create_client(SetPose, "set_pose_server")
 
-        while not self._client_trace.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info("Waiting for 'set_trace_server' server...")
-
-        while not self._client_pose.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info("Waiting for 'set_pose_server' server...")
+        while not self._client_trace.wait_for_service(timeout_sec=1.0) or not self._client_pose.wait_for_service(
+            timeout_sec=1.0
+        ):
+            self.get_logger().info("Waiting for 'set_trace_server' and 'set_pose_server' servers...")
 
         self.ds_controller = DualSenseActionLayer()
         self.ds_controller.lightbar.set_color(0, 50, 250)
