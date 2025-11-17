@@ -24,7 +24,8 @@ setup(
     entry_points={
         "console_scripts": [
             "server = six_dof_ros2_controller.server:main",
-            "client = six_dof_ros2_controller.client:main",
+            "client.demo = six_dof_ros2_controller.client_demo:main",
+            "client.ds = six_dof_ros2_controller.client_dualsense_controlled:main",
             "sub.pose = six_dof_ros2_controller.subscriber_pose:main",
             "sub.joints = six_dof_ros2_controller.subscriber_joint_angles:main",
             "dev.connect = six_dof_ros2_controller.dev.connect:main",
