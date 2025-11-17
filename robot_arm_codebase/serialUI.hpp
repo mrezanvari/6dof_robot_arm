@@ -174,9 +174,9 @@ void checkSerial()
         return;
       }
 
-      globalTraceCoor.x = cmd[2].toDouble();
-      globalTraceCoor.y = cmd[3].toDouble();
-      globalTraceCoor.z = cmd[4].toDouble();
+      globalTraceCoor.x = cmd[2].equalsIgnoreCase("nan") ? globalTraceCoor.x : cmd[2].toDouble();
+      globalTraceCoor.y = cmd[3].equalsIgnoreCase("nan") ? globalTraceCoor.y : cmd[3].toDouble();
+      globalTraceCoor.z = cmd[4].equalsIgnoreCase("nan") ? globalTraceCoor.z : cmd[4].toDouble();
 
       if (cmdSize == 8)
       {
