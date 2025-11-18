@@ -93,8 +93,8 @@ class DualSenseActionLayer(DualSenseController):
 
         self.dpad_values = [0.0, 0.0, 0.0, 0.0]
         if not self.dpad_pressed():
-            self.dpad_curve = 0
-            self.dpad_inc = 0
+            self.dpad_curve = 0.0
+            self.dpad_inc = 0.0
             return
 
         self.dpad_curve += 0.01
