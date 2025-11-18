@@ -47,10 +47,10 @@ class PoseSubscriber(Node):
 
         out_buff = ""
         for k, v in pose_dict["position"].items():
-            out_buff += f"{k}:{v}\r\n"
+            out_buff += f"{k}:{v:.4f}\r\n"
 
         for k, v in orientation_dict.items():
-            out_buff += f"{k}:{v}\r\n"
+            out_buff += f"{k}:{v:.4f}\r\n"
         print(out_buff)
         sys.stdout.flush()
 

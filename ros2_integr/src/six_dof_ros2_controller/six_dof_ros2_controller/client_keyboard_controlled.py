@@ -78,7 +78,7 @@ def on_key_release(key):
 class SetPoseKeyboardClient(Node):
 
     def __init__(self, key_listener: keyboard.Listener):
-        super().__init__("set_trace_ds_client")
+        super().__init__("set_trace_keyboard_client")
         self._client_trace = self.create_client(SetPose, "set_trace_server")
         self._client_pose = self.create_client(SetPose, "set_pose_server")
 
@@ -108,12 +108,12 @@ class SetPoseKeyboardClient(Node):
 
         temp_pose = Pose()
 
-        temp_pose.position.x = float(key_inc * (key_states[Key.up] or (key_states[Key.down] * -1)))
-        temp_pose.position.z = float(key_inc * (key_states[Key.right] or (key_states[Key.left] * -1)))
+        temp_pose.position.z = float(key_inc * (key_states[Key.up] or (key_states[Key.down] * -1)))
+        temp_pose.position.x = float(key_inc * (key_states[Key.right] or (key_states[Key.left] * -1)))
         temp_pose.position.y = float(key_inc * (key_states["."] or (key_states["/"] * -1)))
 
-        orientation_phi = float(key_inc * (key_states["w"] or (key_states["s"] * -1)))
-        orientation_theta = float(key_inc * (key_states["d"] or (key_states["a"] * -1)))
+        orientation_theta = float(key_inc * (key_states["w"] or (key_states["s"] * -1)))
+        orientation_phi = float(key_inc * (key_states["d"] or (key_states["a"] * -1)))
         orientation_psi = float(key_inc * (key_states["e"] or (key_states["q"] * -1)))
 
         q_of_trace = quaternion_from_euler(orientation_phi, orientation_theta, orientation_psi, "rxyz")
