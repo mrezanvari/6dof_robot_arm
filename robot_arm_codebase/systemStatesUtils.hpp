@@ -78,7 +78,7 @@ void printMotors()
 
 bool didRequestTrace(Coor traceCoor, Orientation tracOrientation)
 {
-  return ((traceCoor.x + traceCoor.y + traceCoor.z + tracOrientation.phi + tracOrientation.theta + tracOrientation.psi) == 0.0);
+  return (abs(traceCoor.x + traceCoor.y + traceCoor.z + tracOrientation.phi + tracOrientation.theta + tracOrientation.psi) > 0.0);
 }
 
 void run_homing()
@@ -472,7 +472,8 @@ void system_run()
     tempOrientation.theta += globalTraceOrientation.theta;
     tempOrientation.psi += globalTraceOrientation.psi;
 
-    targetIK = solveFullIK(tempPos, tempOrientation, &targetJointAngles); // not needed to run everytime but here for readability + traceCoor
+    JointAngle tempJointAngles;
+    targetIK = solveFullIK(tempPos, tempOrientation, &tempJointAngles); // not needed to run everytime but here for readability + traceCoor
     mayProceed = (targetIK.validationFlags.bits > 0);
 
     currentMotorPosition = MotorPosition(
@@ -489,6 +490,7 @@ void system_run()
     {
       globalUserOrientation = tempOrientation;
       globalUserPos = tempPos;
+      targetJointAngles = tempJointAngles;
     }
 
     else
@@ -503,24 +505,7 @@ void system_run()
     FK_coor = FK_out.first.first.toYUp();
     FK_orientation = FK_out.first.second;
     J = createJacobianMatrix(FK_out.second);
-    if (didRequestTrace(globalTraceCoor, globalTraceOrientation))
-    {
-      // This needs to be done instead of regulat ik tracing because, the jacobian is
-      // diff based, so, as the globalpos + trace gets larger,
-      // the jacobian pushes the speeds higher, that is not safe
-      // we want a constant speed movement so the error matrix has to be equal to trace values
-      // It is assumed that serialUI will always set the trace to 0 when new set pos command is entered
-      VectorXd traceV{{globalTraceCoor.x,
-                       globalTraceCoor.y,
-                       globalTraceCoor.z,
-                       globalTraceOrientation.phi,
-                       globalTraceOrientation.theta,
-                       globalTraceOrientation.psi}};
-      jointVelocities = extractJointRelation(J, traceV);
-      scaleJointVelocities(jointVelocities, globalJacobiGain, 2);
-    }
-    else
-      jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, globalJacobiGain, 2);
+    jointVelocities = getJointVelocities(currentJointAngles, targetJointAngles, globalJacobiGain, 2);
 
     Serial.printf("x:%f y:%f z:%f | phi:%f theta:%f psi:%f | t1:%f t2:%f t3:%f t4:%f t5:%f t6:%f\r\n",
                   FK_coor.x,
