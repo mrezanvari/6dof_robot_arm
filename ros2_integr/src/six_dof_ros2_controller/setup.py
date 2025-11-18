@@ -25,6 +25,7 @@ setup(
         "console_scripts": [
             "server = six_dof_ros2_controller.server:main",
             "client.demo = six_dof_ros2_controller.client_demo:main",
+            "client.keyboard = six_dof_ros2_controller.client_keyboard_controlled:main",
             "client.ds = six_dof_ros2_controller.client_dualsense_controlled:main",
             "sub.pose = six_dof_ros2_controller.subscriber_pose:main",
             "sub.joints = six_dof_ros2_controller.subscriber_joint_angles:main",
