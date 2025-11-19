@@ -83,16 +83,47 @@ void checkSerial()
 
   if (cmd[0].equalsIgnoreCase("help") || cmd[0].equalsIgnoreCase("h"))
   {
-    Serial.println(F("\n                       ..::Robot Settings::.."));
-    Serial.println(F("---------------------------------------------------------------------------------\n\nCommands:\n"));
+    Serial.println(F("\n                                                          ..::Robot Settings::.."));
+    Serial.println(F("-------------------------------------------------------------------------------------------------------------------------------------------------\n\nCommands:\n"));
     Serial.println(F("hey: Check for connection."));
-    Serial.println(F("set led R G B: change the color of the LED"));
-    Serial.println(F("toggle debug: toggles the debug mode"));
+    Serial.println(F("set led [R] [G] [B]: change the color of the LED"));
+    Serial.println(F("home: change operation mode to HOMING -> begin homing sequence"));
+    Serial.println(F("ik: change operation mode to INVERSE_KINEMATICS -> IK mode"));
+    Serial.println(F("fk: change operation mode to FORWARD_KINEMATICS"));
+    Serial.println(F("ic: change operation mode to IMPEDANCE_CONTROL -> NOT IMPLEMENTED"));
+    Serial.println(F("idle: change operation mode to  IDLE -> reads serial comands and brake the motors while printing the motor positions as angle in degrees"));
+    Serial.println(F("probe: change operation mode to PROBE -> precise FK mode"));
+    Serial.println(F("dev: change operation mode to DEV -> mode used for development and testing"));
+    Serial.println(F("jacobi: change operation mode to FULL_JACOBI -> jacobian differencial IK mode"));
+    Serial.println(F("set pos [x] [y] [z] [phi] [theta] [psi]: set position/orientation in IK/Jacobian modes"));
+    Serial.println(F("                                             - 'nan' can be used to keep the same value for the variable"));
+    Serial.println(F("                                             - xyz values can be set alone to keep the orientation the same"));
+    Serial.println(F("                                                   - eg.--> set pos nan 200 nan "));
+    Serial.println(F("                                                   -        set pos 100 200 -300.20 "));
+    Serial.println(F("                                                   -        set pos nan nan nan 90 120 45"));
+    Serial.println(F("set trace [x] [y] [z] [phi] [theta] [psi]: set jogging for position and orientation (incremental movement)"));
+    Serial.println(F("                                             - 'nan' can be used to keep the same value for the variable"));
+    Serial.println(F("                                             - xyz values can be set alone to keep the orientation the same"));
+    Serial.println(F("                                                  - eg.--> set trace 0 0.1 0"));
+    Serial.println(F("                                                  -        set trace 0 0 0 -0.1 0 0"));
+    Serial.println(F("                                                  -        set pos nan nan nan 90 120 45"));
+    Serial.println(F("set ang [motor_num] [angle_as_degrees] [velocity]: move motor to angle (degrees) with velocity. Equivalent to MJBots \"d pos\" command."));
+    Serial.println(F("                                                  - MUST only be used in IDLE mode"));
+    Serial.println(F("                                                  - Motor num is 1-6"));
+    Serial.println(F("set lock: set the locking for FK/PROBE modes: brake or releases the motors during FK and Probing modes"));
+    Serial.println(F("set zero: zeroes the motors at current position"));
+    Serial.println(F("          - MUST only be used during IDLE and with care since IK will be based on the zero position of motors"));
+    Serial.println(F("set gain [gain]: sets the gain in jacobian mode"));
+    Serial.println(F("set interval [ms]: sets the update interval delay for INVERSE_KINEMATICS, FULL_JACOBI and DEV modes"));
+    Serial.println(F("set vel [velocity]: set the globalVelocity value. Default is 0.7"));
+    Serial.println(F("set acc [acceleration]: set the globalAcceleration value. Default is 5."));
+    Serial.println(F("exec motor_num \"cmd\": execute MJBots commands on a given motor. Commands must be passed with double or single quotes"));
+    Serial.println(F("toggle debug: toggles the debug mode -> activates syslogs"));
     Serial.println(F("monitor switches: will show the state of upper and lower limit switches"));
     Serial.println(F("check partitions: will show LittleFS partitions and files on the ESP32 flash"));
     Serial.println(F("reset/r: will reset the device"));
     Serial.println(F("help/h: will show all the commands\n"));
-    Serial.println(F("---------------------------------------------------------------------------------"));
+    Serial.println(F("-------------------------------------------------------------------------------------------------------------------------------------------------"));
     return;
   }
 
@@ -141,7 +172,6 @@ void checkSerial()
         Serial.println("Command Error!  use \"help\"");
         return;
       }
-      // userGlobalPos = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
 
       tempPos.x = cmd[2].equalsIgnoreCase("nan") ? tempPos.x : cmd[2].toDouble();
       tempPos.y = cmd[3].equalsIgnoreCase("nan") ? tempPos.y : cmd[3].toDouble();
@@ -300,7 +330,6 @@ void checkSerial()
         Serial.println("Command Error!  use \"help\"");
         return;
       }
-      // userGlobalPos = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
 
       globalVelocity = cmd[2].equalsIgnoreCase("nan") ? 1 : cmd[2].toDouble();
 
@@ -314,7 +343,6 @@ void checkSerial()
         Serial.println("Command Error!  use \"help\"");
         return;
       }
-      // userGlobalPos = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
 
       globalAccel = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
 
