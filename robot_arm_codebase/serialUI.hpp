@@ -72,19 +72,19 @@ void checkSerial()
   if (cmdSize <= 0)
     return;
 
-  if (cmd[0].equalsIgnoreCase("reset") || cmd[0].equalsIgnoreCase("r"))
+  if (cmd[0].equalsIgnoreCase(F("reset")) || cmd[0].equalsIgnoreCase(F("r")))
     esp_restart();
 
   if (cmd[0].equalsIgnoreCase("hey"))
   {
-    Serial.println("Hey!");
+    Serial.println(F("Hey!"));
     return;
   }
 
-  if (cmd[0].equalsIgnoreCase("help") || cmd[0].equalsIgnoreCase("h"))
+  if (cmd[0].equalsIgnoreCase(F(("help"))) || cmd[0].equalsIgnoreCase(F("h")))
   {
-    Serial.println(F("\n                                                          ..::Robot Settings::.."));
-    Serial.println(F("-------------------------------------------------------------------------------------------------------------------------------------------------\n\nCommands:\n"));
+    Serial.println(F("\n                                                           ..::Robot Settings::.."));
+    Serial.println(F("-------------------------------------------------------------------------------------------------------------------------------------------------------\n\nCommands:\n"));
     Serial.println(F("hey: Check for connection."));
     Serial.println(F("set led [R] [G] [B]: change the color of the LED"));
     Serial.println(F("home: change operation mode to HOMING -> begin homing sequence"));
@@ -123,67 +123,67 @@ void checkSerial()
     Serial.println(F("check partitions: will show LittleFS partitions and files on the ESP32 flash"));
     Serial.println(F("reset/r: will reset the device"));
     Serial.println(F("help/h: will show all the commands\n"));
-    Serial.println(F("-------------------------------------------------------------------------------------------------------------------------------------------------"));
+    Serial.println(F("------------------------------------------------------------------------< 2025 >-----------------------------------------------------------------------"));
     return;
   }
 
-  else if (cmd[0].equalsIgnoreCase("home"))
+  else if (cmd[0].equalsIgnoreCase(F("home")))
     currentSystemState = HOMING;
 
-  else if (cmd[0].equalsIgnoreCase("ik"))
+  else if (cmd[0].equalsIgnoreCase(F("ik")))
     currentSystemState = INVERSE_KINEMATICS;
 
-  else if (cmd[0].equalsIgnoreCase("fk"))
+  else if (cmd[0].equalsIgnoreCase(F("fk")))
     currentSystemState = FORWARD_KINEMATICS;
 
-  else if (cmd[0].equalsIgnoreCase("ic"))
+  else if (cmd[0].equalsIgnoreCase(F("ic")))
     currentSystemState = IMPEDANCE_CONTROL;
 
-  else if (cmd[0].equalsIgnoreCase("idle"))
+  else if (cmd[0].equalsIgnoreCase(F("idle")))
     currentSystemState = IDLE;
 
-  else if (cmd[0].equalsIgnoreCase("probe"))
+  else if (cmd[0].equalsIgnoreCase(F("probe")))
     currentSystemState = PROBE;
 
-  else if (cmd[0].equalsIgnoreCase("dev"))
-    currentSystemState = DEV;
+  else if (cmd[0].equalsIgnoreCase(F("dev")))
+    currentSystemState = DEV2;
 
-  else if (cmd[0].equalsIgnoreCase("jacobi"))
+  else if (cmd[0].equalsIgnoreCase(F("jacobi")))
     currentSystemState = FULL_JACOBI;
 
   // switch case cannot be used for string in arduino ide!
-  else if (cmd[0].equalsIgnoreCase("set"))
+  else if (cmd[0].equalsIgnoreCase(F("set")))
   {
-    if (cmd[1].equalsIgnoreCase("led"))
+    if (cmd[1].equalsIgnoreCase(F("led")))
     {
       if (cmdSize < 5)
       {
-        Serial.println("Command Error!  use \"help\"");
+        Serial.println(F("Command Error!  use \"help\""));
         return;
       }
 
       rgbLedWrite(RGB_BUILTIN, cmd[2].toInt(), cmd[3].toInt(), cmd[4].toInt());
     }
 
-    else if (cmd[1].equalsIgnoreCase("pos"))
+    else if (cmd[1].equalsIgnoreCase(F("pos")))
     {
       if (cmdSize != 5 && cmdSize != 8)
       {
-        Serial.println("Command Error!  use \"help\"");
+        Serial.println(F("Command Error!  use \"help\""));
         return;
       }
 
-      tempPos.x = cmd[2].equalsIgnoreCase("nan") ? tempPos.x : cmd[2].toDouble();
-      tempPos.y = cmd[3].equalsIgnoreCase("nan") ? tempPos.y : cmd[3].toDouble();
-      tempPos.z = cmd[4].equalsIgnoreCase("nan") ? tempPos.z : cmd[4].toDouble();
+      tempPos.x = cmd[2].equalsIgnoreCase(F("nan")) ? tempPos.x : cmd[2].toDouble();
+      tempPos.y = cmd[3].equalsIgnoreCase(F("nan")) ? tempPos.y : cmd[3].toDouble();
+      tempPos.z = cmd[4].equalsIgnoreCase(F("nan")) ? tempPos.z : cmd[4].toDouble();
       tempPos.axisType = Coor::CoorType::Y_UP;
       tempPos.coorScale = Coor::CoorScale::MILLIMETER;
 
       if (cmdSize == 8)
       {
-        tempOrientation.phi = cmd[5].equalsIgnoreCase("nan") ? tempOrientation.phi : rad(cmd[5].toDouble());
-        tempOrientation.theta = cmd[6].equalsIgnoreCase("nan") ? tempOrientation.theta : rad(cmd[6].toDouble());
-        tempOrientation.psi = cmd[7].equalsIgnoreCase("nan") ? tempOrientation.psi : rad(cmd[7].toDouble());
+        tempOrientation.phi = cmd[5].equalsIgnoreCase(F("nan")) ? tempOrientation.phi : rad(cmd[5].toDouble());
+        tempOrientation.theta = cmd[6].equalsIgnoreCase(F("nan")) ? tempOrientation.theta : rad(cmd[6].toDouble());
+        tempOrientation.psi = cmd[7].equalsIgnoreCase(F("nan")) ? tempOrientation.psi : rad(cmd[7].toDouble());
       }
 
       //  very important to set all trace to 0 to move to correct position properly
@@ -196,44 +196,44 @@ void checkSerial()
       Serial.printf("Set pos to x:%.2f y:%.2f z:%.2f and orientation to phi:%.2f theta:%.2f psi:%.2f\r\n", tempPos.x, tempPos.y, tempPos.z, tempOrientation.phi, tempOrientation.theta, tempOrientation.psi);
     }
 
-    else if (cmd[1].equalsIgnoreCase("trace"))
+    else if (cmd[1].equalsIgnoreCase(F("trace")))
     {
       if (cmdSize != 5 && cmdSize != 8)
       {
-        Serial.println("Command Error!  use \"help\"");
+        Serial.println(F("Command Error!  use \"help\""));
         return;
       }
 
-      globalTraceCoor.x = cmd[2].equalsIgnoreCase("nan") ? globalTraceCoor.x : cmd[2].toDouble();
-      globalTraceCoor.y = cmd[3].equalsIgnoreCase("nan") ? globalTraceCoor.y : cmd[3].toDouble();
-      globalTraceCoor.z = cmd[4].equalsIgnoreCase("nan") ? globalTraceCoor.z : cmd[4].toDouble();
+      globalTraceCoor.x = cmd[2].equalsIgnoreCase(F("nan")) ? globalTraceCoor.x : cmd[2].toDouble();
+      globalTraceCoor.y = cmd[3].equalsIgnoreCase(F("nan")) ? globalTraceCoor.y : cmd[3].toDouble();
+      globalTraceCoor.z = cmd[4].equalsIgnoreCase(F("nan")) ? globalTraceCoor.z : cmd[4].toDouble();
 
       if (cmdSize == 8)
       {
-        globalTraceOrientation.phi = cmd[5].equalsIgnoreCase("nan") ? globalTraceOrientation.phi : rad(cmd[5].toDouble());
-        globalTraceOrientation.theta = cmd[6].equalsIgnoreCase("nan") ? globalTraceOrientation.theta : rad(cmd[6].toDouble());
-        globalTraceOrientation.psi = cmd[7].equalsIgnoreCase("nan") ? globalTraceOrientation.psi : rad(cmd[7].toDouble());
+        globalTraceOrientation.phi = cmd[5].equalsIgnoreCase(F("nan")) ? globalTraceOrientation.phi : rad(cmd[5].toDouble());
+        globalTraceOrientation.theta = cmd[6].equalsIgnoreCase(F("nan")) ? globalTraceOrientation.theta : rad(cmd[6].toDouble());
+        globalTraceOrientation.psi = cmd[7].equalsIgnoreCase(F("nan")) ? globalTraceOrientation.psi : rad(cmd[7].toDouble());
       }
 
       Serial.printf("Set trace to x:%.2f y:%.2f z:%.2f and orientation to phi:%.2f theta:%.2f psi:%.2f\r\n", tempPos.x, tempPos.y, tempPos.z, tempOrientation.phi, tempOrientation.theta, tempOrientation.psi);
     }
 
-    else if (cmd[1].equalsIgnoreCase("ang"))
+    else if (cmd[1].equalsIgnoreCase(F("ang")))
     {
       if (cmdSize < 4 || cmdSize > 5)
       {
-        Serial.println("Command Error!  use \"help\"");
+        Serial.println(F("Command Error!  use \"help\""));
         return;
       }
 
       int motor_ind = cmd[2].toInt();
       if (motor_ind > jointMotors.size() || motor_ind <= 0)
       {
-        Serial.println("Index not permitted read \"help\"");
+        Serial.println(F("Index not permitted read \"help\""));
         return;
       }
 
-      double ang = cmd[3].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[3].toDouble();
+      double ang = cmd[3].equalsIgnoreCase(F("nan")) ? std::numeric_limits<double>::quiet_NaN() : cmd[3].toDouble();
       double pos = (motor_ind < 3) ? mot_a(ang) : wmot_a(ang);
       double vel = 0.4;
       if (cmdSize == 5)
@@ -245,14 +245,14 @@ void checkSerial()
       return;
     }
 
-    else if (cmd[1].equalsIgnoreCase("lock"))
+    else if (cmd[1].equalsIgnoreCase(F("lock")))
       FK_motorLock = !FK_motorLock;
 
-    else if (cmd[1].equalsIgnoreCase("zero"))
+    else if (cmd[1].equalsIgnoreCase(F("zero")))
     {
       if (cmdSize != 2)
       {
-        Serial.println("Command Error!  use \"help\"");
+        Serial.println(F("Command Error!  use \"help\""));
         return;
       }
 
@@ -265,12 +265,12 @@ void checkSerial()
       wristBaseJointMotor.SetStop();
       wristLowerJointMotor.SetStop();
       wristUpperJointMotor.SetStop();
-      baseJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
-      lowerJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
-      upperJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
-      wristBaseJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
-      wristLowerJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
-      wristUpperJointMotor.DiagnosticCommand("conf set motor_position.output.sign -1");
+      baseJointMotor.DiagnosticCommand(F("conf set motor_position.output.sign -1"));
+      lowerJointMotor.DiagnosticCommand(F("conf set motor_position.output.sign -1"));
+      upperJointMotor.DiagnosticCommand(F("conf set motor_position.output.sign -1"));
+      wristBaseJointMotor.DiagnosticCommand(F("conf set motor_position.output.sign -1"));
+      wristLowerJointMotor.DiagnosticCommand(F("conf set motor_position.output.sign -1"));
+      wristUpperJointMotor.DiagnosticCommand(F("conf set motor_position.output.sign -1"));
       delay(10);
       baseJointMotor.SetRequireReindex(rrcmd);
       lowerJointMotor.SetRequireReindex(rrcmd);
@@ -292,16 +292,16 @@ void checkSerial()
       wristLowerJointMotor.SetStop();
       wristUpperJointMotor.SetStop();
 
-      Serial.println("Arm and Wrist zeroed");
+      Serial.println(F("Arm and Wrist zeroed"));
 
       return;
     }
 
-    else if (cmd[1].equalsIgnoreCase("gain"))
+    else if (cmd[1].equalsIgnoreCase(F("gain")))
     {
       if (cmdSize != 3)
       {
-        Serial.println("Command Error!  use \"help\"");
+        Serial.println(F("Command Error!  use \"help\""));
         return;
       }
 
@@ -309,11 +309,11 @@ void checkSerial()
       Serial.printf("Set globalJacobiGain to: %.3f\r\n", globalJacobiGain);
     }
 
-    else if (cmd[1].equalsIgnoreCase("interval"))
+    else if (cmd[1].equalsIgnoreCase(F("interval")))
     {
       if (cmdSize != 3)
       {
-        Serial.println("Command Error!  use \"help\"");
+        Serial.println(F("Command Error!  use \"help\""));
         return;
       }
       // userGlobalPos = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
@@ -327,41 +327,41 @@ void checkSerial()
     {
       if (cmdSize != 3)
       {
-        Serial.println("Command Error!  use \"help\"");
+        Serial.println(F("Command Error!  use \"help\""));
         return;
       }
 
-      globalVelocity = cmd[2].equalsIgnoreCase("nan") ? 1 : cmd[2].toDouble();
+      globalVelocity = cmd[2].equalsIgnoreCase(F("nan")) ? 1 : cmd[2].toDouble();
 
       Serial.printf("Set vel to %1.2f\r\n", globalVelocity);
     }
 
-    else if (cmd[1].equalsIgnoreCase("acc"))
+    else if (cmd[1].equalsIgnoreCase(F("acc")))
     {
       if (cmdSize != 3)
       {
-        Serial.println("Command Error!  use \"help\"");
+        Serial.println(F("Command Error!  use \"help\""));
         return;
       }
 
-      globalAccel = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
+      globalAccel = cmd[2].equalsIgnoreCase(F("nan")) ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
 
       Serial.printf("Set accel to %1.2f\r\n", globalAccel);
     }
   }
 
-  else if (cmd[0].equalsIgnoreCase("exec"))
+  else if (cmd[0].equalsIgnoreCase(F("exec")))
   {
     if (cmdSize != 3)
     {
-      Serial.println("Command Error!  use \"help\"");
+      Serial.println(F("Command Error!  use \"help\""));
       return;
     }
 
     int motor_ind = cmd[1].toInt();
     if (motor_ind > jointMotors.size())
     {
-      Serial.println("Index not permitted read \"help\"");
+      Serial.println(F("Index not permitted read \"help\""));
       return;
     }
 
@@ -370,9 +370,9 @@ void checkSerial()
     jointMotors[motor_ind - 1].DiagnosticCommand(cmd[2].c_str());
   }
 
-  else if (cmd[0].equalsIgnoreCase("toggle"))
+  else if (cmd[0].equalsIgnoreCase(F("toggle")))
   {
-    if (cmd[1].equalsIgnoreCase("debug"))
+    if (cmd[1].equalsIgnoreCase(F("debug")))
     {
       DEBUG = !DEBUG;
       Serial.print(F("Debug "));
@@ -380,25 +380,25 @@ void checkSerial()
     }
   }
 
-  else if (cmd[0].equalsIgnoreCase("monitor"))
+  else if (cmd[0].equalsIgnoreCase(F("monitor")))
   {
     DEBUG = true;
-    if (cmd[1].equalsIgnoreCase("switches"))
+    if (cmd[1].equalsIgnoreCase(F("switches")))
     {
       while (1)
       {
-        syslog("UPPER_JOINT_LIMIT_SWITCH:", digitalRead(UPPER_JOINT_LIMIT_SWITCH));
-        syslog("LOWER_JOINT_LIMIT_SWITCH:", digitalRead(LOWER_JOINT_LIMIT_SWITCH), true, true);
+        syslog(F("UPPER_JOINT_LIMIT_SWITCH:"), digitalRead(UPPER_JOINT_LIMIT_SWITCH));
+        syslog(F("LOWER_JOINT_LIMIT_SWITCH:"), digitalRead(LOWER_JOINT_LIMIT_SWITCH), true, true);
       }
     }
   }
 
-  else if (cmd[0].equalsIgnoreCase("check"))
+  else if (cmd[0].equalsIgnoreCase(F("check")))
   {
-    if (cmd[1].equalsIgnoreCase("partition"))
+    if (cmd[1].equalsIgnoreCase(F("partition")))
     {
       printPartitions();
-      Serial.println("----------------------------- LittleFS -----------------------------");
+      Serial.println(F("----------------------------- LittleFS -----------------------------"));
       listFiles();
       size_t totalBytes = LittleFS.totalBytes();
       size_t usedBytes = LittleFS.usedBytes();
@@ -409,7 +409,7 @@ void checkSerial()
   }
 
   else
-    Serial.println("Command not found, use h/help for info.");
+    Serial.println(F("Command not found, use h/help for info."));
 
-  syslog("OK");
+  syslog(F("OK"));
 }
