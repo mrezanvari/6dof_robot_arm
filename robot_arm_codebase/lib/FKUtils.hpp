@@ -47,7 +47,7 @@ Matrix3d createRotationMatrix(Orientation orientation)
   return R;
 }
 
-pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams> &jointParams = globalJointParams)
+pair<pair<Coor, Orientation>, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams> &jointParams = globalJointParams)
 {
   vector<Matrix4d> frames(jointParams.size() + 1); // 1 frame per joint + 1 first identity frame for jacobian
   frames[0] = Matrix4d::Identity();
@@ -59,11 +59,15 @@ pair<Coor, vector<Matrix4d>> FK(const JointAngle &angles, const vector<DHParams>
   }
 
   Block position = frames.back().block<3, 1>(0, 3); // origin of the frame Tn which corresponds to our end effector
+  Matrix3d currentRotation = frames.back().block<3, 3>(0, 0); 
 
+  Vector3d eulerAngles = currentRotation.eulerAngles(2, 1, 2);
+  Orientation fkOrientationOut(eulerAngles(0), eulerAngles(1), eulerAngles(2));
   Coor fkCoorOut(position(0), position(1), position(2), Coor::CoorType::Z_UP, Coor::CoorScale::METER);
 
   // fkCoorOut = fkCoorOut.toMillimeters();
-  return pair(fkCoorOut, frames);
+  pair<Coor, Orientation> fkOut = pair(fkCoorOut, fkOrientationOut);
+  return pair(fkOut, frames);
 }
 
 Coor FK_precise(const JointAngle &angles)
