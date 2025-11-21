@@ -6,6 +6,7 @@ from geometry_msgs.msg import Pose
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from tf_transformations import euler_from_quaternion
+from math import degrees, radians
 from six_dof_ros2_controller.ros_init import init_ros_domain_from_args
 
 SUBSCRIPTION_TOPIC = "pose_topic"
@@ -36,14 +37,14 @@ class PoseSubscriber(Node):
         }
 
         q = (
-            pose_dict["orientation"]["x"],
-            pose_dict["orientation"]["y"],
-            pose_dict["orientation"]["z"],
-            pose_dict["orientation"]["w"],
+            radians(pose_dict["orientation"]["x"]),
+            radians(pose_dict["orientation"]["y"]),
+            radians(pose_dict["orientation"]["z"]),
+            radians(pose_dict["orientation"]["w"]),
         )
 
         phi, theta, psi = euler_from_quaternion(q, "rzyz")
-        orientation_dict = {"phi": phi, "theta": theta, "psi": psi}
+        orientation_dict = {"phi": degrees(phi), "theta": degrees(theta), "psi": degrees(psi)}
 
         out_buff = ""
         for k, v in pose_dict["position"].items():

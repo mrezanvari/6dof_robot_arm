@@ -158,7 +158,7 @@ void setMotorPositionVelocity(Moteus &motor, double &position, double &velocity)
   motor.SetPosition(motor_cmd, &motor_position_fmt, &motor_query_fmt);
 }
 
-void setMotorPositionVelocityAccel(Moteus &motor, double &position, double &velocity, double &acceleration)
+void setMotorPositionVelocityAccel(Moteus &motor, double position, double velocity, double acceleration)
 {
   Moteus::PositionMode::Command motor_cmd;
   motor_cmd.velocity = 0.0;
