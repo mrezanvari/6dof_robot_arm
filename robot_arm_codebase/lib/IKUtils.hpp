@@ -69,8 +69,9 @@ void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHP
   double D = (r2 + sq(s) - sq(a2) - sq(a3)) / (2 * a2 * a3); // from equation 5.24
 
   double r2_sqrt = sqrt(r2);
-  double alpha_right = atan2(d, r2_sqrt);
-  double alpha_left = atan2(-d, -r2_sqrt);
+  double r2_d2_sqrt = sqrt(r2 - sq(d));
+  double alpha_right = atan2(d, r2_d2_sqrt);
+  double alpha_left = atan2(-d, -r2_d2_sqrt);
 
   double theta1_right = phi - alpha_right; // right arm -> for us
   double theta1_left = phi + alpha_left;   // left arm
@@ -215,7 +216,6 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
 
 int pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStableSolution, JointAngle *bestSolution)
 {
-  // This function may not produce the expected result please avoid using.
   int offsetMultiplier = 1; // value will be [1, 2, 4, 5, 7, 8, 10, 11]
 
   double delta = INT_MAX;
