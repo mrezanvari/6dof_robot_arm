@@ -59,7 +59,7 @@ void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHP
   double d1 = jointParams[0].d; // length of lower arm -> book uses DH, we use MDH so here we use d rather than a
   double a2 = jointParams[2].a; // length of lower arm
   double a3 = jointParams[3].d; // length of upper arm
-  double d = jointParams[1].d;  // shoulder offset -> from the second joint DH d parameter
+  double d = 0;                 // jointParams[1].d;  // shoulder offset -> from the second joint DH d parameter
 
   double phi = atan2(localPos.y, localPos.x);
   double r2 = sq(localPos.y) + sq(localPos.x) - sq(d);       // r squared -> from equation 5.24 and 5.26
