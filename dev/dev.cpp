@@ -648,7 +648,7 @@ int main()
     Orientation devOrientation(
         rad(90),
         rad(90),
-        rad(-40));
+        rad(-30));
 
     newIKCoor = Coor(
         410,
@@ -839,9 +839,9 @@ int main()
                                  deg(desiredJointAngles.theta4),
                                  deg(desiredJointAngles.theta5),
                                  deg(desiredJointAngles.theta6),
-                                 deg(devOrientation.phi),
-                                 deg(devOrientation.theta),
-                                 deg(devOrientation.psi),
+                                 deg(FK_out.first.second.phi),
+                                 deg(FK_out.first.second.theta),
+                                 deg(FK_out.first.second.psi),
                                  bitset<8>(fullIKSolution.validationFlags.bits).to_string(),
                                  singular_out.second.first,
                                  singular_out.second.second,
@@ -1001,7 +1001,7 @@ int main()
     startOrientation = Orientation(
         rad(90),
         rad(90),
-        rad(30));
+        rad(90));
 
     startPosition = Coor(
         410,
@@ -1011,7 +1011,7 @@ int main()
     targetOrientation = Orientation(
         rad(90),
         rad(90),
-        rad(30));
+        rad(90));
 
     targetPosition = Coor(
         410,
