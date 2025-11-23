@@ -157,7 +157,6 @@ int main()
     double phi = atan2(Rn(1, 2), Rn(0, 2));
     double psi = atan2(Rn(2, 1), -Rn(2, 0));
 
-    // Vector3d O = FK_out.first.first.toMeter().toVector3d();
     Vector3d O = FK_out.first.first.toVector3d();
     phi = rad(134.54487);  // 134.54487
     theta = rad(56.02402); // 56.02402
@@ -184,7 +183,6 @@ int main()
     ikIn.x = oc(1);
     ikIn.y = oc(2);
     ikIn.z = oc(0);
-    // ikIn.coorScale = Coor::CoorScale::METER;
     tempAngle = JointAngle();
     IK_Arm(ikIn, &tempAngle);
     IKSolution tstSol;
@@ -264,7 +262,7 @@ int main()
     // code - book
     // return pair(Coor(position(1), position(2), position(0)), frames);
 
-    Coor newpos = globalUserPos.toMeter(); // just to keep the names consistent
+    Coor newpos = globalUserPos; // just to keep the names consistent
     tempAngle = JointAngle();
 
     printf("Coor  ->         x= %1.2f y= %1.2f z= %1.2f\r\n", globalUserPos.x, globalUserPos.y, globalUserPos.z);
@@ -416,7 +414,6 @@ int main()
 
     try
     {
-        pos2 = pos2.toMeter();
         err_pos = pos2 - pos1;
     }
     catch (exception &ex)
@@ -696,6 +693,7 @@ int main()
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
         int chosen = pickBestSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
+        // int chosen = -1;
 
         // for (int i = 6; i < 9; ++i)
         //     desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
@@ -920,6 +918,7 @@ int main()
     currentMotorPosition = startJointAngles.toMotorPosition();
 
     IKSolution targetIK = solveFullIK(targetPosition, targetOrientation, &targetJointAngles);
+    pickBestSolution(targetIK, currentJointAngles, &targetJointAngles);
 
     offset = 0;
     printf("current IK right up Out ->      ");
@@ -1027,7 +1026,6 @@ int main()
     currentMotorPosition = startJointAngles.toMotorPosition();
 
     targetIK = solveFullIK(targetPosition, targetOrientation, &targetJointAngles);
-
     targetJointAngles = startJointAngles;
 
     offset = 0;
@@ -1055,7 +1053,8 @@ int main()
         else if (startOrientation.theta <= rad(60))
             moveDir = 1;
 
-        solveFullIK(targetPosition, startOrientation, &targetJointAngles);
+        targetIK = solveFullIK(targetPosition, startOrientation, &targetJointAngles);
+        pickBestSolution(targetIK, currentJointAngles, &targetJointAngles);
 
         currentJointAngles = currentMotorPosition.toJointAngle();
         FK_out = FK(currentJointAngles);
