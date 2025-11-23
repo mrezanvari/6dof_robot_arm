@@ -648,7 +648,7 @@ int main()
     Orientation devOrientation(
         rad(90),
         rad(90),
-        0);
+        rad(-40));
 
     newIKCoor = Coor(
         410,
@@ -708,8 +708,7 @@ int main()
         FullPivLU<MatrixXd> fivLU(J);
         int rank = fivLU.rank();
 
-        VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 10); // gain really high because the delta is too low
-        jointVelocities = jointVelocities.cwiseMin(0.006).cwiseMax(-0.006);
+        VectorXd jointVelocities = getJointVelocities(currentJointAngles, desiredJointAngles, 10, 0.006); // gain really high because the delta is too low
 
         p_logBuffer = dyna_print("x:{: 3.3f} y:{: 3.3f} z:{: 3.3f} │ t0:{: .3f} t1:{: .3f} t2:{: .3f} t3:{: .3f} t4:{: .3f} t5:{: .3f} │ phi:{: .3f} theta:{: .3f} psi:{: .3f} │ {} │ J11 det:{: .5f} J22 det:{: .5f} │ rank:{} │ ∞: {:d} | {}\r\n",
                                  FK_coor.y,
@@ -766,7 +765,7 @@ int main()
     devOrientation = Orientation(
         rad(90),
         rad(90),
-        0);
+        rad(0));
 
     newIKCoor = Coor(
         410,
@@ -1002,7 +1001,7 @@ int main()
     startOrientation = Orientation(
         rad(90),
         rad(90),
-        0);
+        rad(30));
 
     startPosition = Coor(
         410,
@@ -1012,7 +1011,7 @@ int main()
     targetOrientation = Orientation(
         rad(90),
         rad(90),
-        0);
+        rad(30));
 
     targetPosition = Coor(
         410,

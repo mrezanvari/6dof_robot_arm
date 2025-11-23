@@ -11,8 +11,8 @@ using Eigen::MatrixXd;
 
 using namespace std;
 
-const double deg2radMult = (M_PI / 180.0);          // degrees to radians
-const double rad2degMult = (180.0 / M_PI);          // radians to degrees
+const double deg2radMult = (M_PI / 180.0L);         // degrees to radians
+const double rad2degMult = (180.0L / M_PI);         // radians to degrees
 const double mot2angMult = (360 / 9);               // motor position to angle -> 1 motor = 9 rev of driver -> 1:9 gear
 const double wmot2angMult = (360 / 8);              // motor position to angle -> 1 motor = 9 rev of driver -> 1:9 gear
 const double ang2motMult = (1 / mot2angMult);       // angle to motor position

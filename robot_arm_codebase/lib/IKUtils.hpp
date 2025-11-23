@@ -7,10 +7,12 @@ using namespace std;
 
 #define sq(x) ((x) * (x)) // Sqare function instead of pow(x, 2)
 
+JointAngle previousSolution;
+
 double normalizeAngle(double radAngle)
 {
   // https://stackoverflow.com/questions/11498169/dealing-with-angle-wrap-in-c-code
-  while (radAngle >= M_PI)
+  while (radAngle > M_PI)
     radAngle -= (2.0 * M_PI);
   while (radAngle < -M_PI)
     radAngle += (2.0 * M_PI);
@@ -180,12 +182,24 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
       // wrist 1 solutions
       double theta1 = atan2(R36(2, 2), R36(0, 2));
       double theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
+      // double theta3 = atan(-R36(1, 1) / R36(1, 0));
       double theta3 = atan2(-R36(1, 1), R36(1, 0));
 
+      double t5 = acos(-R36(1, 2)); // wrist singularity check
+      if (sq(t5) < 1e-4)
+      {
+        double t46 = atan(R36(2, 2) * -R36(1, 1) / R36(0, 2) * R36(1, 0));
+        theta1 = previousSolution.theta4;
+        theta2 = 0.0;
+        theta3 = previousSolution.theta6 + (t46 - theta1);
+        // theta3_2 = M_PI + theta3;
+      }
+
       // wrist 2 solutions
-      double theta1_2 = atan2(R36(2, 2), -R36(0, 2));
+      double theta1_2 = M_PI + theta1;
       double theta2_2 = -theta2;
-      double theta3_2 = atan2(-R36(1, 1), -R36(1, 0));
+      double theta3_2 = M_PI + theta3;
+      // double theta3_2 = (2 * M_PI) + theta3;
 
       // offset + 3 arm thetas + index of wrist solution
       newIKSolution.thetas[offset + 3 + 0] = normalizeAngle(theta1);
@@ -206,6 +220,7 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
     for (double &theta : newMotorAngle->thetas)
       theta = NAN;
 
+  previousSolution = *newMotorAngle;
   return newIKSolution;
 }
 
@@ -245,5 +260,6 @@ int pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStab
     }
   }
 
+  previousSolution = *bestSolution;
   return chosen;
 }
