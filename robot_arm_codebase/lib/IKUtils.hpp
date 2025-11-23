@@ -48,8 +48,6 @@ void solve3DoFIK(const Coor &newpos, IKSolution *newIKSolution, const vector<DHP
   Coor localPos = newpos;
   if (newpos.axisType != Coor::CoorType::Z_UP)
     localPos = localPos.toZUp();
-  // if (newpos.coorScale != Coor::CoorScale::METER)
-  //   localPos = localPos.toMeter();
 
   if (localPos.z < 0)
   {
@@ -127,15 +125,13 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
   Coor localPos = newpos;
   if (newpos.axisType != Coor::CoorType::Z_UP)
     localPos = localPos.toZUp();
-  // if (newpos.coorScale != Coor::CoorScale::METER)
-  //   localPos = localPos.toMeter();
 
   Vector3d O = localPos.toVector3d(); // origin of desired end-effector position
 
   Matrix3d R = createRotationMatrix(newOrientation);         // rotation matrix of end-effector with respect to base origin
   Vector3d oc = O - (globalJointParams.back().d * R.col(2)); // offset origin of end-effector
 
-  Coor ikIn(oc, Coor::CoorType::Z_UP, Coor::CoorScale::METER);
+  Coor ikIn(oc, Coor::CoorType::Z_UP);
 
   IKSolution newIKSolution;
   solve3DoFIK(ikIn, &newIKSolution, jointParams);
@@ -182,7 +178,6 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
       */
 
       // wrist 1 solutions
-
       double theta1 = atan2(R36(2, 2), R36(0, 2));
       double theta2 = atan2(sqrt(1 - sq(R36(1, 2))), -R36(1, 2));
       double theta3 = atan2(-R36(1, 1), R36(1, 0));

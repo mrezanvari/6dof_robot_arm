@@ -59,11 +59,11 @@ pair<pair<Coor, Orientation>, vector<Matrix4d>> FK(const JointAngle &angles, con
   }
 
   Block position = frames.back().block<3, 1>(0, 3); // origin of the frame Tn which corresponds to our end effector
-  Matrix3d currentRotation = frames.back().block<3, 3>(0, 0); 
+  Matrix3d currentRotation = frames.back().block<3, 3>(0, 0);
 
   Vector3d eulerAngles = currentRotation.eulerAngles(2, 1, 2);
   Orientation fkOrientationOut(eulerAngles(0), eulerAngles(1), eulerAngles(2));
-  Coor fkCoorOut(position(0), position(1), position(2), Coor::CoorType::Z_UP, Coor::CoorScale::METER);
+  Coor fkCoorOut(position(0), position(1), position(2), Coor::CoorType::Z_UP);
 
   // fkCoorOut = fkCoorOut.toMillimeters();
   pair<Coor, Orientation> fkOut = pair(fkCoorOut, fkOrientationOut);

@@ -40,29 +40,20 @@ struct Coor
         Y_UP,
     };
 
-    enum CoorScale
-    {
-        MILLIMETER,
-        METER,
-    };
-
     double x{};
     double y{};
     double z{};
     CoorType axisType = CoorType::Y_UP;
-    CoorScale coorScale = CoorScale::MILLIMETER;
 
     Coor() = default;
-    Coor(double x, double y, double z, CoorType axisType = CoorType::Y_UP, CoorScale coorScale = CoorScale::MILLIMETER) : x(x),
-                                                                                                                          y(y),
-                                                                                                                          z(z),
-                                                                                                                          axisType(axisType),
-                                                                                                                          coorScale(coorScale) {}
-    explicit Coor(const Vector3d &v, CoorType axisType, CoorScale coorScale) : x(v(0)),
-                                                                               y(v(1)),
-                                                                               z(v(2)),
-                                                                               axisType(axisType),
-                                                                               coorScale(coorScale) {} // conversion from vector3d
+    Coor(double x, double y, double z, CoorType axisType = CoorType::Y_UP) : x(x),
+                                                                             y(y),
+                                                                             z(z),
+                                                                             axisType(axisType) {}
+    explicit Coor(const Vector3d &v, CoorType axisType) : x(v(0)),
+                                                          y(v(1)),
+                                                          z(v(2)),
+                                                          axisType(axisType) {} // conversion from vector3d
 
     Coor toZUp() const
     {
@@ -85,40 +76,21 @@ struct Coor
         }};
     }
 
-    Coor toMeter()
-    {
-        return Coor(x / 1000.0,
-                    y / 1000.0,
-                    z / 1000.0,
-                    axisType,
-                    CoorScale::METER);
-    }
-
-    Coor toMillimeters()
-    {
-        return Coor(x * 1000.0,
-                    y * 1000.0,
-                    z * 1000.0,
-                    axisType,
-                    CoorScale::MILLIMETER);
-    }
-
     Coor &operator=(const Coor &other)
     {
         x = other.x;
         y = other.y;
         z = other.z;
         axisType = other.axisType;
-        coorScale = other.coorScale;
 
         return *this;
     }
 
     Coor operator-(const Coor &other) const
     {
-        if (axisType != other.axisType || coorScale != other.coorScale)
+        if (axisType != other.axisType)
         {
-            throw std::logic_error("(-) operator ERROR: Coor objects must have be of the same coorScale and axisType");
+            throw std::logic_error("(-) operator ERROR: Coor objects must have be of the same axisType");
             return Coor(-1, -1, -1);
         }
         return Coor(x - other.x, y - other.y, z - other.z);
@@ -129,8 +101,7 @@ struct Coor
         return (abs(other.x - x) <= threshold &&
                 abs(other.y - y) <= threshold &&
                 abs(other.z - z) <= threshold &&
-                axisType == other.axisType &&
-                coorScale == other.coorScale);
+                axisType == other.axisType);
     }
 };
 

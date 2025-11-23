@@ -177,7 +177,6 @@ void checkSerial()
       tempPos.y = cmd[3].equalsIgnoreCase(F("nan")) ? tempPos.y : cmd[3].toDouble();
       tempPos.z = cmd[4].equalsIgnoreCase(F("nan")) ? tempPos.z : cmd[4].toDouble();
       tempPos.axisType = Coor::CoorType::Y_UP;
-      tempPos.coorScale = Coor::CoorScale::MILLIMETER;
 
       if (cmdSize == 8)
       {
@@ -316,7 +315,6 @@ void checkSerial()
         Serial.println(F("Command Error!  use \"help\""));
         return;
       }
-      // userGlobalPos = cmd[2].equalsIgnoreCase("nan") ? std::numeric_limits<double>::quiet_NaN() : cmd[2].toDouble();
 
       updteInterval = cmd[2].toFloat();
 

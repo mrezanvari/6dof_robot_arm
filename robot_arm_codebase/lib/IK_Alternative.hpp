@@ -107,8 +107,6 @@ bool IK_Arm(const Coor &newpos, JointAngle *newMotorAngle, const vector<DHParams
     Coor localPos = newpos;
     if (newpos.axisType != Coor::CoorType::Y_UP)
         localPos = localPos.toYUp();
-    // if (newpos.coorScale != Coor::CoorScale::MILLIMETER)
-    //   localPos = localPos.toMillimeters();
 
     IKSoutionSet armSolutions;
 
@@ -148,15 +146,13 @@ bool IK(const Coor &newpos, Orientation &newOrientation, JointAngle *newMotorAng
     Coor localPos = newpos;
     if (newpos.axisType != Coor::CoorType::Z_UP)
         localPos = localPos.toZUp();
-    // if (newpos.coorScale != Coor::CoorScale::METER)
-    //   localPos = localPos.toMeter();
 
     Vector3d O = localPos.toVector3d(); // origin of desired end-effector position
 
     Matrix3d R = createRotationMatrix(newOrientation);         // rotation matrix of end-effector with respect to base origin
     Vector3d oc = O - (globalJointParams.back().d * R.col(2)); // offset origin of end-effector
 
-    Coor ikIn(oc, Coor::CoorType::Z_UP, Coor::CoorScale::METER);
+    Coor ikIn(oc, Coor::CoorType::Z_UP);
 
     bool arm_may_proceed = IK_Arm(ikIn, newMotorAngle, jointParams);
 
