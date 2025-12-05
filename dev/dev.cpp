@@ -693,6 +693,7 @@ int main()
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
         int chosen = pickBestSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
+        pickBestJointSpaceSolution(currentJointAngles, &desiredJointAngles);
         // int chosen = -1;
 
         // for (int i = 6; i < 9; ++i)
@@ -765,7 +766,7 @@ int main()
     devOrientation = Orientation(
         rad(90),
         rad(90),
-        rad(0));
+        rad(23));
 
     newIKCoor = Coor(
         410,
@@ -808,10 +809,11 @@ int main()
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
         int chosen = pickBestSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
+        pickBestJointSpaceSolution(currentJointAngles, &desiredJointAngles);
         // if (newIKCoor.z < 0)
         // {
-        //     desiredJointAngles.theta4 = fullIKSolution.right.up.wrist2.theta3;
-        //     desiredJointAngles.theta6 = fullIKSolution.right.up.wrist2.theta1;
+        //     //     desiredJointAngles.theta4 = fullIKSolution.right.up.wrist2.theta3;
+        //     desiredJointAngles.theta6 = normalizeAngle((M_PI * 2.0) - desiredJointAngles.theta6);
         // }
         // for (int i = 6; i < 9; ++i)
         //     desiredJointAngles.thetas[i - 3] = fullIKSolution.thetas[i];
@@ -918,6 +920,7 @@ int main()
 
     IKSolution targetIK = solveFullIK(targetPosition, targetOrientation, &targetJointAngles);
     pickBestSolution(targetIK, currentJointAngles, &targetJointAngles);
+    pickBestJointSpaceSolution(currentJointAngles, &targetJointAngles);
 
     offset = 0;
     printf("current IK right up Out ->      ");
@@ -1054,6 +1057,7 @@ int main()
 
         targetIK = solveFullIK(targetPosition, startOrientation, &targetJointAngles);
         pickBestSolution(targetIK, currentJointAngles, &targetJointAngles);
+        pickBestJointSpaceSolution(currentJointAngles, &targetJointAngles);
 
         currentJointAngles = currentMotorPosition.toJointAngle();
         FK_out = FK(currentJointAngles);

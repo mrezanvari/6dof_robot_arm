@@ -428,6 +428,7 @@ void system_run()
         mayProceed)
     {
       pickBestSolution(newSolutions, currentJointAngles, &tempAngle);
+      pickBestJointSpaceSolution(currentJointAngles, &tempAngle);
       targetPosition = tempAngle.toMotorPosition();
       globalUserOrientation = tempOrientation;
       globalUserPos = tempPos;
@@ -742,6 +743,7 @@ void system_run()
         mayProceed)
     {
       pickBestSolution(newSolutions, currentJointAngles, &tempAngle);
+      pickBestJointSpaceSolution(currentJointAngles, &tempAngle);
       targetPosition = tempAngle.toMotorPosition();
       globalUserOrientation = tempOrientation;
       globalUserPos = tempPos;

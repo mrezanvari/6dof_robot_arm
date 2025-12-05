@@ -18,6 +18,14 @@ double normalizeAngle(double radAngle)
   return radAngle;
 }
 
+double enforceJointContinuity(const double &currentJointAngle, const double &expectedJointAngle)
+{
+  if (abs(currentJointAngle - expectedJointAngle) > M_PI)
+    return normalizeAngle(-expectedJointAngle);
+
+  return expectedJointAngle;
+}
+
 void validate3DoFIKSolutions(IKSolution *newIKSolution, const vector<DHParams> &jointParams = globalJointParams)
 {
   /*
@@ -244,5 +252,12 @@ int pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStab
       delta = thisDelta;
     }
   }
+
   return chosen;
+}
+
+void pickBestJointSpaceSolution(const JointAngle &currentJointAngles, JointAngle *desiredJointAngle)
+{
+  for (size_t i = 0; i < 6; ++i)
+    desiredJointAngle->thetas[i] = enforceJointContinuity(currentJointAngles.thetas[i], desiredJointAngle->thetas[i]);
 }
