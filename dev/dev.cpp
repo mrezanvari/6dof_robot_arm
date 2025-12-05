@@ -621,7 +621,7 @@ int main()
     printf("Solutions: %s\r\n", bitset<8>(newSolution.validationFlags.bits).to_string().c_str());
 
     JointAngle best;
-    double chose = pickBestSolution(newSolution, lastStableJoint, &best);
+    double chose = pickBestIKSolution(newSolution, lastStableJoint, &best);
     printf("Chose: %f\r\n", chose);
 
     printf("Last Stable Solution  ->     ");
@@ -692,7 +692,7 @@ int main()
         JointAngle desiredJointAngles;
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
-        int chosen = pickBestSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
+        int chosen = pickBestIKSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
         pickBestJointSpaceSolution(currentJointAngles, &desiredJointAngles);
         // int chosen = -1;
 
@@ -808,7 +808,7 @@ int main()
         JointAngle desiredJointAngles;
         IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &desiredJointAngles);
 
-        int chosen = pickBestSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
+        int chosen = pickBestIKSolution(fullIKSolution, currentJointAngles, &desiredJointAngles);
         pickBestJointSpaceSolution(currentJointAngles, &desiredJointAngles);
         // if (newIKCoor.z < 0)
         // {
@@ -919,7 +919,7 @@ int main()
     currentMotorPosition = startJointAngles.toMotorPosition();
 
     IKSolution targetIK = solveFullIK(targetPosition, targetOrientation, &targetJointAngles);
-    pickBestSolution(targetIK, currentJointAngles, &targetJointAngles);
+    pickBestIKSolution(targetIK, currentJointAngles, &targetJointAngles);
     pickBestJointSpaceSolution(currentJointAngles, &targetJointAngles);
 
     offset = 0;
@@ -1056,7 +1056,7 @@ int main()
             moveDir = 1;
 
         targetIK = solveFullIK(targetPosition, startOrientation, &targetJointAngles);
-        pickBestSolution(targetIK, currentJointAngles, &targetJointAngles);
+        pickBestIKSolution(targetIK, currentJointAngles, &targetJointAngles);
         pickBestJointSpaceSolution(currentJointAngles, &targetJointAngles);
 
         currentJointAngles = currentMotorPosition.toJointAngle();

@@ -217,7 +217,7 @@ IKSolution solveFullIK(const Coor &newpos, Orientation &newOrientation, JointAng
   return newIKSolution;
 }
 
-int pickBestSolution(const IKSolution &newIKSolution, const JointAngle &lastStableSolution, JointAngle *bestSolution)
+int pickBestIKSolution(const IKSolution &newIKSolution, const JointAngle &lastStableSolution, JointAngle *bestSolution)
 {
   int offsetMultiplier = 1; // value will be [1, 2, 4, 5, 7, 8, 10, 11]
 

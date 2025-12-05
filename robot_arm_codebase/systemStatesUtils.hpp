@@ -427,7 +427,7 @@ void system_run()
         wristUpperJointMotor.last_result().values.trajectory_complete &&
         mayProceed)
     {
-      pickBestSolution(newSolutions, currentJointAngles, &tempAngle);
+      pickBestIKSolution(newSolutions, currentJointAngles, &tempAngle);
       pickBestJointSpaceSolution(currentJointAngles, &tempAngle);
       targetPosition = tempAngle.toMotorPosition();
       globalUserOrientation = tempOrientation;
@@ -742,7 +742,7 @@ void system_run()
         wristUpperJointMotor.last_result().values.trajectory_complete &&
         mayProceed)
     {
-      pickBestSolution(newSolutions, currentJointAngles, &tempAngle);
+      pickBestIKSolution(newSolutions, currentJointAngles, &tempAngle);
       pickBestJointSpaceSolution(currentJointAngles, &tempAngle);
       targetPosition = tempAngle.toMotorPosition();
       globalUserOrientation = tempOrientation;
