@@ -146,7 +146,7 @@ void checkSerial()
     currentSystemState = PROBE;
 
   else if (cmd[0].equalsIgnoreCase(F("dev")))
-    currentSystemState = DEV3;
+    currentSystemState = DEV;
 
   else if (cmd[0].equalsIgnoreCase(F("jacobi")))
     currentSystemState = FULL_JACOBI;

@@ -13,8 +13,6 @@ enum SystemStates
   PROBE,
   SYS_ERR,
   DEV,
-  DEV2,
-  DEV3,
 };
 
 enum HomingSubStates
@@ -85,9 +83,9 @@ void printPose()
                 FK_coor.x,
                 FK_coor.y,
                 FK_coor.z,
-                deg(FK_orientation.phi),
-                deg(FK_orientation.theta),
-                deg(FK_orientation.psi),
+                deg(globalUserOrientation.phi),
+                deg(globalUserOrientation.theta),
+                deg(globalUserOrientation.psi),
                 currentJointAngles.theta1,
                 currentJointAngles.theta2,
                 currentJointAngles.theta3,
@@ -427,8 +425,6 @@ void system_run()
         wristUpperJointMotor.last_result().values.trajectory_complete &&
         mayProceed)
     {
-      pickBestIKSolution(newSolutions, currentJointAngles, &tempAngle);
-      pickBestJointSpaceSolution(currentJointAngles, &tempAngle);
       targetPosition = tempAngle.toMotorPosition();
       globalUserOrientation = tempOrientation;
       globalUserPos = tempPos;
@@ -469,6 +465,7 @@ void system_run()
 
     JointAngle tempJointAngles;
     targetIK = solveFullIK(tempPos, tempOrientation, &tempJointAngles); // not needed to run everytime but here for readability + traceCoor
+
     mayProceed = (targetIK.validationFlags.bits > 0);
 
     currentMotorPosition = MotorPosition(
@@ -591,186 +588,12 @@ void system_run()
 
   case DEV:
   {
-    devOrientation.theta += rad((moveDir * 0.1));
-    // devOrientation.phi += rad((-moveDir * 0.1));
-
-    // TODO: Make the ball rotate around itself -> this would be a starting point:
-    // double thet = constrain(rad(30) + sin(millis() * 0.0001), rad(30), rad(100));
-    // double ph = constrain(rad(90) + cos(millis() * 0.0001), rad(90), rad(180));
-    // printf("theta:% .5f phi:% .5f t2:% .5f p2:% .5f\r\n", deg(thet), deg(ph), deg(devOrientation.theta), deg(devOrientation.phi));
-
-    if (devOrientation.theta > rad(180))
-      moveDir = -1;
-    else if (devOrientation.theta <= rad(60))
-      moveDir = 1;
-
-    Coor newIKCoor(
-        410,
-        215,
-        0);
-
-    JointAngle IKOut;
-    IKSolution fullIKSolution = solveFullIK(newIKCoor, devOrientation, &IKOut);
-
-    targetPosition = IKOut.toMotorPosition();
-
-    currentMotorPosition = MotorPosition(
-        baseJointMotor.last_result().values.position,
-        lowerJointMotor.last_result().values.position,
-        upperJointMotor.last_result().values.position,
-        wristBaseJointMotor.last_result().values.position,
-        wristLowerJointMotor.last_result().values.position,
-        wristUpperJointMotor.last_result().values.position);
-
-    FK_out = FK(currentMotorPosition.toJointAngle());
-    FK_coor = FK_out.first.first;
-    J = createJacobianMatrix(FK_out.second);
-    auto singular_out = IsSingular(J);
-    bool isAtSingularity = singular_out.first;
-
-    VectorXd velocities = getJointVelocities(currentMotorPosition.toJointAngle(), IKOut, 8);
-
-    setMotorPositionVelocity(baseJointMotor, targetPosition.pos1, velocities(0));
-    setMotorPositionVelocity(lowerJointMotor, targetPosition.pos2, velocities(1));
-    setMotorPositionVelocity(upperJointMotor, targetPosition.pos3, velocities(2));
-    setMotorPositionVelocity(wristBaseJointMotor, targetPosition.pos4, velocities(3));
-    setMotorPositionVelocity(wristLowerJointMotor, targetPosition.pos5, velocities(4));
-    setMotorPositionVelocity(wristUpperJointMotor, targetPosition.pos6, velocities(5));
-
-    Serial.printf("x:% 3.3f y:% 3.3f z:% 3.3f │ t0: %1.3f t1: %1.3f t2: %1.3f t3: %1.3f t4: %1.3f t5: %1.3f | phi:% 1.3f theta:% 1.3f psi:% 1.3f | %s | ∞: %d \r\n",
-                  FK_coor.x,
-                  FK_coor.y,
-                  FK_coor.z,
-                  deg(IKOut.theta1),
-                  deg(IKOut.theta2),
-                  deg(IKOut.theta3),
-                  deg(IKOut.theta4),
-                  deg(IKOut.theta5),
-                  deg(IKOut.theta6),
-                  deg(devOrientation.phi),
-                  deg(devOrientation.theta),
-                  deg(devOrientation.psi),
-                  bitset<8>(fullIKSolution.validationFlags.bits).to_string().c_str(),
-                  isAtSingularity);
-
-    delay(updteInterval);
-    break;
-  }
-
-  case DEV2:
-  {
-    IKSolution newSolutions = solveFullIK(tempPos, tempOrientation, &tempAngle);
-    mayProceed = (newSolutions.validationFlags.bits > 0);
-
-    currentMotorPosition = MotorPosition(
-        baseJointMotor.last_result().values.position,
-        lowerJointMotor.last_result().values.position,
-        upperJointMotor.last_result().values.position,
-        wristBaseJointMotor.last_result().values.position,
-        wristLowerJointMotor.last_result().values.position,
-        wristUpperJointMotor.last_result().values.position);
-
-    currentJointAngles = currentMotorPosition.toJointAngle();
-    FK_out = FK(currentJointAngles);
-    FK_coor = FK_out.first.first.toYUp();
-    FK_orientation = FK_out.first.second;
-
-    if (baseJointMotor.last_result().values.trajectory_complete &&
-        lowerJointMotor.last_result().values.trajectory_complete &&
-        upperJointMotor.last_result().values.trajectory_complete &&
-        wristBaseJointMotor.last_result().values.trajectory_complete &&
-        wristLowerJointMotor.last_result().values.trajectory_complete &&
-        wristUpperJointMotor.last_result().values.trajectory_complete &&
-        mayProceed)
-    {
-      targetPosition = tempAngle.toMotorPosition();
-      globalUserOrientation = tempOrientation;
-      globalUserPos = tempPos;
-      // J = createJacobianMatrix(FK_out.second);
-      jointVelocities = getJointVelocities(currentJointAngles, tempAngle, globalJacobiGain, 2);
-    }
-
-    else
-    {
-      tempPos = globalUserPos;
-      tempOrientation = globalUserOrientation;
-      // currentPosition = currentMotorPosition;
-      // jointVelocities << 0, 0, 0, 0, 0, 0;
-    }
-
-    setMotorPositionVelocityAccel(baseJointMotor, targetPosition.pos1, abs(jointVelocities(0)), globalAccel);
-    setMotorPositionVelocityAccel(lowerJointMotor, targetPosition.pos2, abs(jointVelocities(1)), globalAccel);
-    setMotorPositionVelocityAccel(upperJointMotor, targetPosition.pos3, abs(jointVelocities(2)), globalAccel);
-    setMotorPositionVelocityAccel(wristBaseJointMotor, targetPosition.pos4, abs(jointVelocities(3)), globalAccel);
-    setMotorPositionVelocityAccel(wristLowerJointMotor, targetPosition.pos5, abs(jointVelocities(4)), globalAccel);
-    setMotorPositionVelocityAccel(wristUpperJointMotor, targetPosition.pos6, abs(jointVelocities(5)), globalAccel);
-
-    printPose();
-
-    delay(updteInterval);
-    break;
-  }
-
-  case DEV3:
-  {
-    tempPos.x += globalTraceCoor.x;
-    tempPos.y += globalTraceCoor.y;
-    tempPos.z += globalTraceCoor.z;
-
-    tempOrientation.phi += globalTraceOrientation.phi;
-    tempOrientation.theta += globalTraceOrientation.theta;
-    tempOrientation.psi += globalTraceOrientation.psi;
-
-    IKSolution newSolutions = solveFullIK(tempPos, tempOrientation, &tempAngle);
-    mayProceed = (newSolutions.validationFlags.bits > 0);
-
-    currentMotorPosition = MotorPosition(
-        baseJointMotor.last_result().values.position,
-        lowerJointMotor.last_result().values.position,
-        upperJointMotor.last_result().values.position,
-        wristBaseJointMotor.last_result().values.position,
-        wristLowerJointMotor.last_result().values.position,
-        wristUpperJointMotor.last_result().values.position);
-
-    currentJointAngles = currentMotorPosition.toJointAngle();
-
-    if (
-        //     baseJointMotor.last_result().values.trajectory_complete &&
-        //     lowerJointMotor.last_result().values.trajectory_complete &&
-        //     upperJointMotor.last_result().values.trajectory_complete &&
-        //     wristBaseJointMotor.last_result().values.trajectory_complete &&
-        //     wristLowerJointMotor.last_result().values.trajectory_complete &&
-        //     wristUpperJointMotor.last_result().values.trajectory_complete &&
-        mayProceed)
-    {
-      pickBestIKSolution(newSolutions, currentJointAngles, &tempAngle);
-      pickBestJointSpaceSolution(currentJointAngles, &tempAngle);
-      targetPosition = tempAngle.toMotorPosition();
-      globalUserOrientation = tempOrientation;
-      globalUserPos = tempPos;
-    }
-
-    else
-    {
-      tempPos = globalUserPos;
-      tempOrientation = globalUserOrientation;
-    }
-
-    jointVelocities = getJointVelocities(currentJointAngles, targetPosition.toJointAngle(), globalJacobiGain, 2);
-
-    setMotorPositionVelocityAccel(baseJointMotor, targetPosition.pos1, abs(jointVelocities(0)), globalAccel);
-    setMotorPositionVelocityAccel(lowerJointMotor, targetPosition.pos2, abs(jointVelocities(1)), globalAccel);
-    setMotorPositionVelocityAccel(upperJointMotor, targetPosition.pos3, abs(jointVelocities(2)), globalAccel);
-    setMotorPositionVelocityAccel(wristBaseJointMotor, targetPosition.pos4, abs(jointVelocities(3)), globalAccel);
-    setMotorPositionVelocityAccel(wristLowerJointMotor, targetPosition.pos5, abs(jointVelocities(4)), globalAccel);
-    setMotorPositionVelocityAccel(wristUpperJointMotor, targetPosition.pos6, abs(jointVelocities(5)), globalAccel);
-
-    FK_out = FK(currentJointAngles);
-    FK_coor = FK_out.first.first.toYUp();
-    FK_orientation = FK_out.first.second;
-    printPose();
-
-    delay(updteInterval);
+    baseJointMotor.SetBrake();
+    lowerJointMotor.SetBrake();
+    upperJointMotor.SetBrake();
+    wristBaseJointMotor.SetBrake();
+    wristLowerJointMotor.SetBrake();
+    wristUpperJointMotor.SetBrake();
     break;
   }
 
