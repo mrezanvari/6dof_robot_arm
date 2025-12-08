@@ -734,12 +734,13 @@ void system_run()
 
     currentJointAngles = currentMotorPosition.toJointAngle();
 
-    if (baseJointMotor.last_result().values.trajectory_complete &&
-        lowerJointMotor.last_result().values.trajectory_complete &&
-        upperJointMotor.last_result().values.trajectory_complete &&
-        wristBaseJointMotor.last_result().values.trajectory_complete &&
-        wristLowerJointMotor.last_result().values.trajectory_complete &&
-        wristUpperJointMotor.last_result().values.trajectory_complete &&
+    if (
+        //     baseJointMotor.last_result().values.trajectory_complete &&
+        //     lowerJointMotor.last_result().values.trajectory_complete &&
+        //     upperJointMotor.last_result().values.trajectory_complete &&
+        //     wristBaseJointMotor.last_result().values.trajectory_complete &&
+        //     wristLowerJointMotor.last_result().values.trajectory_complete &&
+        //     wristUpperJointMotor.last_result().values.trajectory_complete &&
         mayProceed)
     {
       pickBestIKSolution(newSolutions, currentJointAngles, &tempAngle);
@@ -757,12 +758,12 @@ void system_run()
 
     jointVelocities = getJointVelocities(currentJointAngles, targetPosition.toJointAngle(), globalJacobiGain, 2);
 
-    setMotorPositionVelocityAccel(baseJointMotor, targetPosition.pos1, jointVelocities(0), globalAccel);
-    setMotorPositionVelocityAccel(lowerJointMotor, targetPosition.pos2, jointVelocities(1), globalAccel);
-    setMotorPositionVelocityAccel(upperJointMotor, targetPosition.pos3, jointVelocities(2), globalAccel);
-    setMotorPositionVelocityAccel(wristBaseJointMotor, targetPosition.pos4, jointVelocities(3), globalAccel);
-    setMotorPositionVelocityAccel(wristLowerJointMotor, targetPosition.pos5, jointVelocities(4), globalAccel);
-    setMotorPositionVelocityAccel(wristUpperJointMotor, targetPosition.pos6, jointVelocities(5), globalAccel);
+    setMotorPositionVelocityAccel(baseJointMotor, targetPosition.pos1, abs(jointVelocities(0)), globalAccel);
+    setMotorPositionVelocityAccel(lowerJointMotor, targetPosition.pos2, abs(jointVelocities(1)), globalAccel);
+    setMotorPositionVelocityAccel(upperJointMotor, targetPosition.pos3, abs(jointVelocities(2)), globalAccel);
+    setMotorPositionVelocityAccel(wristBaseJointMotor, targetPosition.pos4, abs(jointVelocities(3)), globalAccel);
+    setMotorPositionVelocityAccel(wristLowerJointMotor, targetPosition.pos5, abs(jointVelocities(4)), globalAccel);
+    setMotorPositionVelocityAccel(wristUpperJointMotor, targetPosition.pos6, abs(jointVelocities(5)), globalAccel);
 
     FK_out = FK(currentJointAngles);
     FK_coor = FK_out.first.first.toYUp();
