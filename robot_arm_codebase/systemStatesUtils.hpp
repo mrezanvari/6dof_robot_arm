@@ -31,6 +31,7 @@ HomingSubStates currentHomingState = BEGIN_HOMING;
 
 JointAngle tempAngle;
 JointAngle targetJointAngles;
+JointAngle lastStableJointAngles;
 IKSolution targetIK;
 MotorPosition targetPosition;
 MotorPosition currentMotorPosition;
@@ -370,8 +371,9 @@ void system_run()
     tempOrientation = globalUserOrientation;
 
     targetIK = solveFullIK(tempPos, tempOrientation, &targetJointAngles);
+    mayProceed = (targetIK.validationFlags.bits > 0);
     if (mayProceed)
-      targetPosition = tempAngle.toMotorPosition();
+      targetPosition = targetJointAngles.toMotorPosition();
 
     velocities_last = Vector3d{0, 0, 0};
     jointVelocities = VectorXd{{0, 0, 0, 0, 0, 0}};
@@ -425,6 +427,8 @@ void system_run()
         wristUpperJointMotor.last_result().values.trajectory_complete &&
         mayProceed)
     {
+      pickBestIKSolution(newSolutions, lastStableJointAngles, &tempAngle);
+      lastStableJointAngles = currentJointAngles;
       targetPosition = tempAngle.toMotorPosition();
       globalUserOrientation = tempOrientation;
       globalUserPos = tempPos;
@@ -588,12 +592,68 @@ void system_run()
 
   case DEV:
   {
-    baseJointMotor.SetBrake();
-    lowerJointMotor.SetBrake();
-    upperJointMotor.SetBrake();
-    wristBaseJointMotor.SetBrake();
-    wristLowerJointMotor.SetBrake();
-    wristUpperJointMotor.SetBrake();
+    tempPos.x += globalTraceCoor.x;
+    tempPos.y += globalTraceCoor.y;
+    tempPos.z += globalTraceCoor.z;
+
+    tempOrientation.phi += globalTraceOrientation.phi;
+    tempOrientation.theta += globalTraceOrientation.theta;
+    tempOrientation.psi += globalTraceOrientation.psi;
+
+    IKSolution newSolutions = solveFullIK(tempPos, tempOrientation, &tempAngle);
+    mayProceed = (newSolutions.validationFlags.bits > 0);
+
+    currentMotorPosition = MotorPosition(
+        baseJointMotor.last_result().values.position,
+        lowerJointMotor.last_result().values.position,
+        upperJointMotor.last_result().values.position,
+        wristBaseJointMotor.last_result().values.position,
+        wristLowerJointMotor.last_result().values.position,
+        wristUpperJointMotor.last_result().values.position);
+
+    currentJointAngles = currentMotorPosition.toJointAngle();
+
+    if (
+        baseJointMotor.last_result().values.trajectory_complete &&
+        lowerJointMotor.last_result().values.trajectory_complete &&
+        upperJointMotor.last_result().values.trajectory_complete &&
+        wristBaseJointMotor.last_result().values.trajectory_complete &&
+        wristLowerJointMotor.last_result().values.trajectory_complete &&
+        wristUpperJointMotor.last_result().values.trajectory_complete &&
+        mayProceed)
+    {
+      pickBestIKSolution(newSolutions, lastStableJointAngles, &tempAngle);
+      lastStableJointAngles = currentJointAngles;
+      targetPosition = tempAngle.toMotorPosition();
+      globalUserOrientation = tempOrientation;
+      globalUserPos = tempPos;
+    }
+
+    else
+    {
+      tempPos = globalUserPos;
+      tempOrientation = globalUserOrientation;
+    }
+
+    jointVelocities = getJointVelocities(currentJointAngles, targetPosition.toJointAngle(), globalJacobiGain, 2);
+
+    for (auto &vel : jointVelocities)
+      if (abs(vel) < 0.1 && abs(vel) >= 0.0025)
+        vel = 0.1;
+
+    setMotorPositionVelocityAccel(baseJointMotor, targetPosition.pos1, abs(jointVelocities(0)), globalAccel);
+    setMotorPositionVelocityAccel(lowerJointMotor, targetPosition.pos2, abs(jointVelocities(1)), globalAccel);
+    setMotorPositionVelocityAccel(upperJointMotor, targetPosition.pos3, abs(jointVelocities(2)), globalAccel);
+    setMotorPositionVelocityAccel(wristBaseJointMotor, targetPosition.pos4, abs(jointVelocities(3)), globalAccel);
+    setMotorPositionVelocityAccel(wristLowerJointMotor, targetPosition.pos5, abs(jointVelocities(4)), globalAccel);
+    setMotorPositionVelocityAccel(wristUpperJointMotor, targetPosition.pos6, abs(jointVelocities(5)), globalAccel);
+
+    FK_out = FK(currentJointAngles);
+    FK_coor = FK_out.first.first.toYUp();
+    FK_orientation = FK_out.first.second;
+    printPose();
+
+    delay(updteInterval);
     break;
   }
 

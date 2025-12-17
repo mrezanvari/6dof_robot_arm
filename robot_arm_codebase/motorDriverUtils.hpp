@@ -148,8 +148,15 @@ void lockMotor(Moteus &motor, bool useDiagnoseProtocol = true)
   motor.SetPosition(motor_cmd);
 }
 
-void setMotorPositionVelocity(Moteus &motor, double &position, double &velocity)
+void setMotorPositionVelocity(Moteus &motor, double &position, double &velocity, bool useDiagnoseProtocol = false)
 {
+  if (useDiagnoseProtocol)
+  {
+    String cmd = "d pos " + String(position) + " 0 nan v" + String(velocity);
+    motor.DiagnosticCommand(cmd);
+    return;
+  }
+
   Moteus::PositionMode::Command motor_cmd;
   motor_cmd.velocity = NaN;
   motor_cmd.maximum_torque = NaN;
@@ -158,8 +165,15 @@ void setMotorPositionVelocity(Moteus &motor, double &position, double &velocity)
   motor.SetPosition(motor_cmd, &motor_position_fmt, &motor_query_fmt);
 }
 
-void setMotorPositionVelocityAccel(Moteus &motor, double position, double velocity, double acceleration)
+void setMotorPositionVelocityAccel(Moteus &motor, double position, double velocity, double acceleration, bool useDiagnoseProtocol = false)
 {
+  if (useDiagnoseProtocol)
+  {
+    String cmd = "d pos " + String(position) + " 0 nan v" + String(velocity) + " a" + String(acceleration);
+    motor.DiagnosticCommand(cmd);
+    return;
+  }
+
   Moteus::PositionMode::Command motor_cmd;
   motor_cmd.velocity = 0.0;
   motor_cmd.maximum_torque = NaN;
